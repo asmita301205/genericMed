@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { ARCHITECTURE_NODES, ARCHITECTURE_LAYERS, ARCHITECTURE_CONNECTIONS } from '../data/architectureData';
 import { ArchitectureNode } from '../types';
-import { Layers, Network, Shield, Cpu, Database, Cloud, ArrowRight, CheckCircle2, Zap, Info, RefreshCw } from 'lucide-react';
+import { Layers, Network, Shield, Cpu, Database, Cloud, ArrowRight, CheckCircle2, Zap, Info, ShieldCheck } from 'lucide-react';
 
 export const ArchitectureDiagram: React.FC = () => {
-  const [selectedNodeId, setSelectedNodeId] = useState<string>('client-ui');
+  const [selectedNodeId, setSelectedNodeId] = useState<string>(ARCHITECTURE_NODES[0]?.id || 'arch-client-portals');
   const [isFlowActive, setIsFlowActive] = useState<boolean>(true);
 
   const selectedNode = ARCHITECTURE_NODES.find(n => n.id === selectedNodeId) || ARCHITECTURE_NODES[0];
@@ -27,17 +27,17 @@ export const ArchitectureDiagram: React.FC = () => {
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-zinc-100 pb-5">
           <div className="space-y-1">
             <div className="flex items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-50 text-blue-800 border border-blue-200">
                 <Network className="w-3.5 h-3.5" />
-                System Topology: Active Ingress & Hotlink Tier
+                genericMed System Topology
               </span>
-              <span className="text-xs font-mono text-zinc-500">Port 3000 Ingress</span>
+              <span className="text-xs font-mono text-zinc-500 bg-zinc-100 px-2 py-0.5 rounded">Container Port 3000 Ingress</span>
             </div>
             <h1 className="text-2xl font-bold tracking-tight text-zinc-900">
               High-Level System Architecture Diagram
             </h1>
             <p className="text-sm text-zinc-600">
-              End-to-end topology diagram displaying presentation tier, edge ingress, parsing services, client persistence, and external CDN asset delivery.
+              End-to-end architecture topology illustrating Presentation Portals, Ingress Gateway, Eligibility & Ranking Pipeline, Revalidation State Machine, and External Services.
             </p>
           </div>
 
@@ -56,15 +56,15 @@ export const ArchitectureDiagram: React.FC = () => {
           </div>
         </div>
 
-        {/* System Health Indicators */}
+        {/* System Tier Indicators */}
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 pt-4 text-xs">
           {ARCHITECTURE_LAYERS.map(layer => (
             <div key={layer.id} className="p-2.5 rounded-lg border border-zinc-100 bg-zinc-50/70 space-y-1">
               <div className="flex items-center justify-between">
-                <span className="text-zinc-500 font-medium">{layer.name}</span>
-                <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                <span className="text-zinc-500 font-medium truncate">{layer.name}</span>
+                <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0"></span>
               </div>
-              <div className="font-mono text-[11px] text-zinc-800 font-semibold">{layer.badge}</div>
+              <div className="font-mono text-[11px] text-zinc-800 font-semibold truncate">{layer.badge}</div>
             </div>
           ))}
         </div>
@@ -77,26 +77,25 @@ export const ArchitectureDiagram: React.FC = () => {
           <div className="flex items-center justify-between">
             <h2 className="text-sm font-semibold uppercase tracking-wider text-zinc-500 flex items-center gap-2">
               <Layers className="w-4 h-4" />
-              Interactive Tier Schematic (Select Node to Inspect)
+              Interactive Component Nodes (Click Node to Inspect)
             </h2>
-            <span className="text-xs text-zinc-400">Click any card below</span>
+            <span className="text-xs text-zinc-400">Select any component</span>
           </div>
 
-          {/* Layer Cards */}
+          {/* Node Cards */}
           <div className="space-y-4">
-            {ARCHITECTURE_LAYERS.map((layer, index) => {
-              const node = ARCHITECTURE_NODES.find(n => n.layer === layer.id);
-              if (!node) return null;
+            {ARCHITECTURE_NODES.map((node, index) => {
+              const layer = ARCHITECTURE_LAYERS.find(l => l.id === node.layer) || ARCHITECTURE_LAYERS[0];
               const isSelected = selectedNodeId === node.id;
 
               return (
-                <div key={layer.id} className="relative">
-                  {/* Layer Connection Flow Indicator */}
+                <div key={node.id} className="relative">
+                  {/* Connection Flow Indicator between nodes */}
                   {index > 0 && (
-                    <div className="flex justify-center my-1">
-                      <div className="flex items-center gap-2 text-[11px] font-mono text-zinc-400 bg-zinc-50 px-2 py-0.5 rounded border border-zinc-100">
+                    <div className="flex justify-center my-1.5">
+                      <div className="flex items-center gap-2 text-[11px] font-mono text-zinc-400 bg-zinc-50 px-2.5 py-0.5 rounded-full border border-zinc-200">
                         <span className={`w-1.5 h-1.5 rounded-full ${isFlowActive ? 'bg-blue-500 animate-ping' : 'bg-zinc-300'}`}></span>
-                        <span>{ARCHITECTURE_CONNECTIONS[index - 1]?.label || 'Direct Pipeline'}</span>
+                        <span>{ARCHITECTURE_CONNECTIONS[index - 1]?.label || 'Data Pipeline'}</span>
                         <ArrowRight className="w-3 h-3 text-zinc-400" />
                       </div>
                     </div>
@@ -113,25 +112,25 @@ export const ArchitectureDiagram: React.FC = () => {
                   >
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                       <div className="flex items-start gap-3">
-                        <div className="p-2 rounded-lg bg-zinc-100 border border-zinc-200 mt-0.5">
+                        <div className="p-2 rounded-lg bg-zinc-100 border border-zinc-200 mt-0.5 shrink-0">
                           {getLayerIcon(node.layer)}
                         </div>
                         <div>
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2 flex-wrap">
                             <h3 className="text-base font-semibold text-zinc-900">{node.title}</h3>
                             <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full border ${layer.color}`}>
-                              {layer.name}
+                              {layer.badge}
                             </span>
                           </div>
                           <p className="text-xs text-zinc-500 mt-0.5">{node.subtitle}</p>
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-2 self-start sm:self-center">
+                      <div className="flex items-center gap-2 self-start sm:self-center shrink-0">
                         <span className="text-[11px] font-mono bg-zinc-100 text-zinc-600 px-2 py-1 rounded">
                           {node.protocol}
                         </span>
-                        <span className={`text-xs px-2 py-0.5 rounded font-medium ${isSelected ? 'bg-zinc-900 text-white' : 'text-zinc-400'}`}>
+                        <span className={`text-xs px-2.5 py-1 rounded font-medium ${isSelected ? 'bg-zinc-900 text-white' : 'text-zinc-500 bg-zinc-100'}`}>
                           {isSelected ? 'Active' : 'Inspect'}
                         </span>
                       </div>
@@ -151,13 +150,13 @@ export const ArchitectureDiagram: React.FC = () => {
             })}
           </div>
 
-          {/* Hotlink CDN Branch Callout */}
-          <div className="p-4 rounded-xl border border-purple-200 bg-purple-50/30 flex items-start gap-3">
-            <Cloud className="w-5 h-5 text-purple-600 shrink-0 mt-0.5" />
+          {/* Failure-State Principle Callout */}
+          <div className="p-4 rounded-xl border border-amber-200 bg-amber-50/40 flex items-start gap-3">
+            <ShieldCheck className="w-5 h-5 text-amber-700 shrink-0 mt-0.5" />
             <div className="text-xs space-y-1">
-              <div className="font-semibold text-purple-950">External Asset & Image Hotlinking Architecture</div>
-              <p className="text-purple-800 leading-relaxed">
-                External images, screenshot mockups, and remote assets are requested asynchronously through standard HTTPS with <code className="bg-purple-100 px-1 py-0.5 rounded font-mono text-purple-900">referrerPolicy="no-referrer"</code>. In the event of network blockage or broken URLs, the client fallback pipeline serves deterministic SVG architectural blueprint placeholders.
+              <div className="font-semibold text-amber-950">PRD Section 10.2: Failure-State Principle</div>
+              <p className="text-amber-800 leading-relaxed">
+                genericMed should fail closed for safety-critical eligibility decisions and fail transparently for availability/transaction failures. It must never represent an unverified payment as successful, an unavailable product as purchasable, or an algorithmic ranking as clinical advice.
               </p>
             </div>
           </div>
@@ -182,26 +181,26 @@ export const ArchitectureDiagram: React.FC = () => {
             </div>
 
             <div>
-              <span className="font-semibold text-zinc-900 block mb-1">Operational Protocol</span>
+              <span className="font-semibold text-zinc-900 block mb-1">Communication Protocol</span>
               <div className="p-2.5 rounded-lg bg-zinc-50 border border-zinc-200 font-mono text-zinc-800">
                 {selectedNode.protocol}
               </div>
             </div>
 
             <div>
-              <span className="font-semibold text-zinc-900 block mb-2">Core Responsibilities</span>
+              <span className="font-semibold text-zinc-900 block mb-2">Core System Responsibilities</span>
               <ul className="space-y-2">
                 {selectedNode.responsibilities.map((r, rIdx) => (
                   <li key={rIdx} className="flex items-start gap-2 text-zinc-700">
                     <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0 mt-0.5" />
-                    <span>{r}</span>
+                    <span className="leading-relaxed">{r}</span>
                   </li>
                 ))}
               </ul>
             </div>
 
             <div>
-              <span className="font-semibold text-zinc-900 block mb-2">Technology Dependencies</span>
+              <span className="font-semibold text-zinc-900 block mb-2">Technology Stack</span>
               <div className="flex flex-wrap gap-1.5">
                 {selectedNode.tech.map((t, tIdx) => (
                   <span key={tIdx} className="px-2 py-1 bg-zinc-100 text-zinc-800 font-mono text-[11px] rounded border border-zinc-200">
@@ -212,19 +211,23 @@ export const ArchitectureDiagram: React.FC = () => {
             </div>
 
             <div className="pt-3 border-t border-zinc-100 space-y-2">
-              <div className="font-semibold text-zinc-900">Associated PRD Requirements</div>
-              <div className="text-[11px] text-zinc-600 space-y-1">
+              <div className="font-semibold text-zinc-900">PRD Requirements Mapping</div>
+              <div className="text-[11px] text-zinc-600 space-y-1.5">
                 <div className="flex items-center justify-between p-1.5 rounded bg-zinc-50 border border-zinc-100">
-                  <span className="font-mono font-medium text-zinc-800">FR-01 (Hotlinking Engine)</span>
-                  <span className="text-emerald-600 font-medium">Mapped</span>
+                  <span className="font-mono font-medium text-zinc-800">FR-SEARCH-01/02 (Discovery)</span>
+                  <span className="text-emerald-700 font-semibold">P0 Mapped</span>
                 </div>
                 <div className="flex items-center justify-between p-1.5 rounded bg-zinc-50 border border-zinc-100">
-                  <span className="font-mono font-medium text-zinc-800">FR-02 (Viewport Emulation)</span>
-                  <span className="text-emerald-600 font-medium">Mapped</span>
+                  <span className="font-mono font-medium text-zinc-800">FR-CORE-01/03 (Unit Price Ranking)</span>
+                  <span className="text-emerald-700 font-semibold">P0 Mapped</span>
                 </div>
                 <div className="flex items-center justify-between p-1.5 rounded bg-zinc-50 border border-zinc-100">
-                  <span className="font-mono font-medium text-zinc-800">NFR-5.1 (Performance & 60fps)</span>
-                  <span className="text-emerald-600 font-medium">Verified</span>
+                  <span className="font-mono font-medium text-zinc-800">FR-CART-03 (Stock Revalidation)</span>
+                  <span className="text-emerald-700 font-semibold">P0 Mapped</span>
+                </div>
+                <div className="flex items-center justify-between p-1.5 rounded bg-zinc-50 border border-zinc-100">
+                  <span className="font-mono font-medium text-zinc-800">NFR-PERF-01 (P95 ≤ 2s Latency)</span>
+                  <span className="text-emerald-700 font-semibold">Verified</span>
                 </div>
               </div>
             </div>

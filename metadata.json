@@ -1,6 +1,6 @@
 {
-  "name": "Product Blueprint & Application Suite",
-  "description": "Formal Product Requirements Document (PRD), interactive system architecture diagram, and core application layout.",
+  "name": "genericMed",
+  "description": "Requirement-aware generic medicine discovery, comparison and purchase marketplace based on the official PRD.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }
