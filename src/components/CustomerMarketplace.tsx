@@ -1,5 +1,19 @@
 import React, { useState, useMemo } from 'react';
-import { CanonicalProduct, ProductListing, CartItem, OrderRecord } from '../types';
+import {
+  CanonicalProduct,
+  ProductListing,
+  CartItem,
+  OrderRecord,
+  UserProfile,
+  PrescriptionRecord,
+  PaymentSession,
+  ProductReview,
+  SubscriptionIntervalDays
+} from '../types';
+import { SAMPLE_PRESCRIPTIONS } from '../data/genericMedData';
+import { ProductDetailModal } from './ProductDetailModal';
+import { PrescriptionScannerModal } from './PrescriptionScannerModal';
+import { PaymentGatewayModal } from './PaymentGatewayModal';
 import {
   Search,
   Filter,
@@ -22,18 +36,30 @@ import {
   Trash2,
   RefreshCw,
   Eye,
-  Check
+  Check,
+  FileText,
+  Upload
 } from 'lucide-react';
 
 interface CustomerMarketplaceProps {
   products: CanonicalProduct[];
   listings: ProductListing[];
   cart: CartItem[];
+  userProfile?: UserProfile;
+  activePrescriptions?: PrescriptionRecord[];
   onAddToCart: (listing: ProductListing, canonicalProduct: CanonicalProduct) => void;
   onUpdateCartQty: (listingId: string, delta: number) => void;
   onRemoveFromCart: (listingId: string) => void;
   onClearCart: () => void;
-  onPlaceOrder: (customerName: string, customerEmail: string, address: string) => OrderRecord;
+  onPlaceOrder: (
+    customerName: string,
+    customerEmail: string,
+    address: string,
+    paymentMethod?: string,
+    idempotencyKey?: string
+  ) => OrderRecord;
+  onPaymentFailure?: (errorMsg: string, session: PaymentSession) => void;
+  onUploadPrescription?: (prescription: PrescriptionRecord) => void;
   onNavigateToOrders: () => void;
 }
 
@@ -41,11 +67,15 @@ export const CustomerMarketplace: React.FC<CustomerMarketplaceProps> = ({
   products,
   listings,
   cart,
+  userProfile,
+  activePrescriptions = SAMPLE_PRESCRIPTIONS,
   onAddToCart,
   onUpdateCartQty,
   onRemoveFromCart,
   onClearCart,
   onPlaceOrder,
+  onPaymentFailure,
+  onUploadPrescription,
   onNavigateToOrders,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -57,16 +87,28 @@ export const CustomerMarketplace: React.FC<CustomerMarketplaceProps> = ({
   const [compareListingIds, setCompareListingIds] = useState<string[]>([]);
   const [isCompareModalOpen, setIsCompareModalOpen] = useState(false);
 
-  // Selected product detail modal
-  const [inspectListing, setInspectListing] = useState<{ listing: ProductListing; product: CanonicalProduct } | null>(null);
+  // Selected product detail modal (Phase 1 FR-DISC-01 to 05)
+  const [selectedDetailProduct, setSelectedDetailProduct] = useState<CanonicalProduct | null>(null);
+  const [isProductDetailOpen, setIsProductDetailOpen] = useState(false);
+
+  // Prescription modal state (Phase 1 FR-SEARCH-05, FR-CART-02)
+  const [isPrescriptionModalOpen, setIsPrescriptionModalOpen] = useState(false);
+  const [verifiedPrescription, setVerifiedPrescription] = useState<PrescriptionRecord | null>(
+    activePrescriptions[0] || null
+  );
+
+  // Payment gateway modal state (Phase 1 FR-PAY-01 to 06)
+  const [isPaymentGatewayOpen, setIsPaymentGatewayOpen] = useState(false);
 
   // Cart / Checkout Drawer state
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
-  const [checkoutStep, setCheckoutStep] = useState<'review' | 'revalidating' | 'payment' | 'confirmed'>('review');
+  const [checkoutStep, setCheckoutStep] = useState<'review' | 'revalidating' | 'confirmed'>('review');
   const [revalidationPassed, setRevalidationPassed] = useState(true);
-  const [checkoutName, setCheckoutName] = useState('Aarav Sharma');
-  const [checkoutEmail, setCheckoutEmail] = useState('aarav.sharma@example.com');
-  const [checkoutAddress, setCheckoutAddress] = useState('Flat 402, Greenfield Residences, Sector 14');
+  const [checkoutName, setCheckoutName] = useState(userProfile?.name || 'Aarav Sharma');
+  const [checkoutEmail, setCheckoutEmail] = useState(userProfile?.email || 'aarav.sharma@example.com');
+  const [checkoutAddress, setCheckoutAddress] = useState(
+    userProfile?.addresses?.find(a => a.isDefault)?.street || 'Flat 402, Greenfield Residences, Sector 14'
+  );
   const [lastPlacedOrder, setLastPlacedOrder] = useState<OrderRecord | null>(null);
 
   // Filtered & Ranked Listings
@@ -170,20 +212,34 @@ export const CustomerMarketplace: React.FC<CustomerMarketplaceProps> = ({
             </p>
           </div>
 
-          {/* Cart Trigger Badge */}
-          <button
-            id="cart-view-trigger-btn"
-            onClick={() => setIsCheckoutOpen(true)}
-            className="inline-flex items-center gap-2.5 px-4 py-2.5 rounded-xl bg-zinc-900 text-white hover:bg-zinc-800 transition-colors shadow-xs shrink-0"
-          >
-            <ShoppingCart className="w-4 h-4" />
-            <span className="text-sm font-semibold">Cart ({cart.reduce((s, i) => s + i.quantity, 0)})</span>
-            {cart.length > 0 && (
-              <span className="text-xs font-mono bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-md">
-                ₹{cartSubtotal.toFixed(2)}
-              </span>
-            )}
-          </button>
+          {/* Cart & Rx Trigger Buttons */}
+          <div className="flex items-center gap-2.5 shrink-0">
+            <button
+              id="scan-rx-banner-btn"
+              onClick={() => setIsPrescriptionModalOpen(true)}
+              className="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl border border-zinc-200 bg-white hover:bg-zinc-50 text-zinc-800 transition-colors shadow-xs text-xs font-semibold"
+            >
+              <FileText className="w-4 h-4 text-emerald-600" />
+              <span>Upload Rx (AI)</span>
+              {verifiedPrescription && (
+                <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+              )}
+            </button>
+
+            <button
+              id="cart-view-trigger-btn"
+              onClick={() => setIsCheckoutOpen(true)}
+              className="inline-flex items-center gap-2.5 px-4 py-2.5 rounded-xl bg-zinc-900 text-white hover:bg-zinc-800 transition-colors shadow-xs"
+            >
+              <ShoppingCart className="w-4 h-4" />
+              <span className="text-sm font-semibold">Cart ({cart.reduce((s, i) => s + i.quantity, 0)})</span>
+              {cart.length > 0 && (
+                <span className="text-xs font-mono bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-md">
+                  ₹{cartSubtotal.toFixed(2)}
+                </span>
+              )}
+            </button>
+          </div>
         </div>
 
         {/* Search Input & Constraint Filters */}
@@ -426,7 +482,10 @@ export const CustomerMarketplace: React.FC<CustomerMarketplaceProps> = ({
                   <div className="flex items-center gap-2">
                     <button
                       id={`inspect-btn-${listing.id}`}
-                      onClick={() => setInspectListing({ listing, product: canonical })}
+                      onClick={() => {
+                        setSelectedDetailProduct(canonical);
+                        setIsProductDetailOpen(true);
+                      }}
                       className="flex-1 py-2 px-3 rounded-lg border border-zinc-200 text-xs font-medium text-zinc-700 hover:bg-zinc-50 transition-colors flex items-center justify-center gap-1.5"
                     >
                       <Eye className="w-3.5 h-3.5 text-zinc-500" />
@@ -605,82 +664,57 @@ export const CustomerMarketplace: React.FC<CustomerMarketplaceProps> = ({
         </div>
       )}
 
-      {/* Product Detail Modal (FR-CART-01) */}
-      {inspectListing && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-lg w-full p-6 space-y-5 shadow-2xl border border-zinc-200">
-            <div className="flex items-start justify-between border-b border-zinc-100 pb-4">
-              <div>
-                <span className="text-[11px] font-mono text-zinc-500 bg-zinc-100 px-2 py-0.5 rounded">
-                  FR-CART-01 Product Detail
-                </span>
-                <h3 className="text-xl font-bold text-zinc-900 mt-1">
-                  {inspectListing.product.canonicalName}
-                </h3>
-              </div>
-              <button onClick={() => setInspectListing(null)} className="p-1 rounded-lg text-zinc-400 hover:text-zinc-700">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
+      {/* Product Detail Modal (Phase 1 FR-DISC-01 to 05) */}
+      <ProductDetailModal
+        isOpen={isProductDetailOpen && !!selectedDetailProduct}
+        onClose={() => {
+          setIsProductDetailOpen(false);
+          setSelectedDetailProduct(null);
+        }}
+        product={selectedDetailProduct || products[0]}
+        listings={listings}
+        onAddToCart={onAddToCart}
+      />
 
-            <div className="space-y-3 text-xs text-zinc-700">
-              <div className="p-3 rounded-lg bg-zinc-50 border border-zinc-100 space-y-1">
-                <span className="font-semibold text-zinc-900">Bio-Equivalence & Formulation</span>
-                <p className="text-zinc-600">{inspectListing.product.description}</p>
-              </div>
+      {/* Prescription Scanner Modal (Phase 1 FR-SEARCH-05, FR-CART-02) */}
+      <PrescriptionScannerModal
+        isOpen={isPrescriptionModalOpen}
+        onClose={() => setIsPrescriptionModalOpen(false)}
+        cartItems={cart}
+        canonicalProduct={selectedDetailProduct || undefined}
+        onPrescriptionVerified={(rx) => {
+          setVerifiedPrescription(rx);
+          if (onUploadPrescription) {
+            onUploadPrescription(rx);
+          }
+        }}
+      />
 
-              <div className="grid grid-cols-2 gap-2 text-xs">
-                <div className="p-2.5 rounded border border-zinc-100 bg-zinc-50/50">
-                  <span className="text-zinc-400 block">Therapeutic Class</span>
-                  <span className="font-semibold text-zinc-900">{inspectListing.product.therapeuticClass}</span>
-                </div>
-                <div className="p-2.5 rounded border border-zinc-100 bg-zinc-50/50">
-                  <span className="text-zinc-400 block">Dosage Form</span>
-                  <span className="font-semibold text-zinc-900">{inspectListing.product.dosageForm}</span>
-                </div>
-                <div className="p-2.5 rounded border border-zinc-100 bg-zinc-50/50">
-                  <span className="text-zinc-400 block">Prescription Required</span>
-                  <span className={`font-semibold ${inspectListing.product.prescriptionRequired ? 'text-amber-600' : 'text-emerald-700'}`}>
-                    {inspectListing.product.prescriptionRequired ? 'Yes (Rx Required)' : 'No (OTC Available)'}
-                  </span>
-                </div>
-                <div className="p-2.5 rounded border border-zinc-100 bg-zinc-50/50">
-                  <span className="text-zinc-400 block">Seller Verification</span>
-                  <span className="font-semibold text-blue-700">Licensed Partner</span>
-                </div>
-              </div>
-
-              <div className="p-3 rounded-lg border border-emerald-200 bg-emerald-50/40 text-emerald-950 flex items-center justify-between">
-                <div>
-                  <span className="text-xs font-semibold block">Total Pack Price</span>
-                  <span className="text-xs text-emerald-800">{inspectListing.listing.packQuantity} Tablets per pack</span>
-                </div>
-                <span className="text-xl font-extrabold font-mono text-emerald-900">
-                  ₹{inspectListing.listing.packPrice.toFixed(2)}
-                </span>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-3 pt-2">
-              <button
-                onClick={() => setInspectListing(null)}
-                className="flex-1 py-2.5 rounded-lg border border-zinc-200 text-xs font-medium text-zinc-700"
-              >
-                Close
-              </button>
-              <button
-                onClick={() => {
-                  onAddToCart(inspectListing.listing, inspectListing.product);
-                  setInspectListing(null);
-                }}
-                className="flex-1 py-2.5 rounded-lg bg-zinc-900 text-white text-xs font-semibold shadow-xs"
-              >
-                Add to Cart
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Payment Gateway Modal (Phase 1 FR-PAY-01 to 06) */}
+      <PaymentGatewayModal
+        isOpen={isPaymentGatewayOpen}
+        onClose={() => setIsPaymentGatewayOpen(false)}
+        amount={cartSubtotal}
+        cartItems={cart}
+        customerName={checkoutName}
+        customerEmail={checkoutEmail}
+        onPaymentSuccess={(session) => {
+          const order = onPlaceOrder(
+            checkoutName,
+            checkoutEmail,
+            checkoutAddress,
+            session.provider,
+            session.idempotencyKey
+          );
+          setLastPlacedOrder(order);
+          setCheckoutStep('confirmed');
+        }}
+        onPaymentFailure={(errMsg, session) => {
+          if (onPaymentFailure) {
+            onPaymentFailure(errMsg, session);
+          }
+        }}
+      />
 
       {/* Cart & Checkout Drawer (FR-CART-03, FR-PAY-01 to 05) */}
       {isCheckoutOpen && (
@@ -803,6 +837,61 @@ export const CustomerMarketplace: React.FC<CustomerMarketplaceProps> = ({
                             className="w-full px-3 py-2 border rounded-lg border-zinc-200 bg-zinc-50 text-xs text-zinc-900 resize-none"
                           />
                         </div>
+
+                        {/* Prescription Validation Gate (FR-CART-02) */}
+                        {cart.some(i => i.canonicalProduct.prescriptionRequired) && (
+                          <div className="p-3 rounded-xl border border-amber-200 bg-amber-50/50 space-y-2">
+                            <div className="flex items-center justify-between">
+                              <span className="font-bold text-zinc-900 text-xs flex items-center gap-1.5">
+                                <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                                Prescription Compliance (FR-CART-02)
+                              </span>
+                              {verifiedPrescription ? (
+                                <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full border border-emerald-300">
+                                  <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                                  Validated
+                                </span>
+                              ) : (
+                                <span className="text-[10px] font-bold text-amber-800 bg-amber-100 px-2 py-0.5 rounded-full">
+                                  Prescription Required
+                                </span>
+                              )}
+                            </div>
+
+                            {verifiedPrescription ? (
+                              <div className="p-2.5 rounded-lg bg-white border border-emerald-200 text-xs space-y-1">
+                                <div className="flex justify-between items-center">
+                                  <span className="font-bold text-zinc-900">{verifiedPrescription.doctorName}</span>
+                                  <span className="text-[10px] font-mono text-zinc-500">{verifiedPrescription.doctorRegNumber}</span>
+                                </div>
+                                <p className="text-[11px] text-zinc-600">
+                                  AI verified generic equivalence with {verifiedPrescription.confidenceScore}% confidence.
+                                </p>
+                                <button
+                                  type="button"
+                                  onClick={() => setIsPrescriptionModalOpen(true)}
+                                  className="text-[11px] font-semibold text-emerald-700 hover:underline pt-0.5 block"
+                                >
+                                  Change / Re-scan Prescription &rarr;
+                                </button>
+                              </div>
+                            ) : (
+                              <div className="space-y-1.5">
+                                <p className="text-[11px] text-amber-800">
+                                  This cart contains Schedule H medicines requiring a verified prescription before payment.
+                                </p>
+                                <button
+                                  type="button"
+                                  onClick={() => setIsPrescriptionModalOpen(true)}
+                                  className="w-full py-2 rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-semibold text-xs shadow-xs flex items-center justify-center gap-1.5 transition-colors"
+                                >
+                                  <Upload className="w-3.5 h-3.5" />
+                                  Upload / Scan Prescription (AI)
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </div>
                     </div>
                   )}
@@ -822,20 +911,7 @@ export const CustomerMarketplace: React.FC<CustomerMarketplaceProps> = ({
                 </div>
               )}
 
-              {/* Step 3: Payment Verification */}
-              {checkoutStep === 'payment' && (
-                <div className="py-12 text-center space-y-3">
-                  <CreditCard className="w-8 h-8 text-amber-500 animate-pulse mx-auto" />
-                  <h4 className="text-sm font-semibold text-zinc-900">
-                    Reconciling Digital Payment Gateway (FR-PAY-02)
-                  </h4>
-                  <p className="text-xs text-zinc-500 max-w-xs mx-auto">
-                    Awaiting idempotent webhook signature and banking settlement verification...
-                  </p>
-                </div>
-              )}
-
-              {/* Step 4: Order Confirmed (CQMO) */}
+              {/* Step 3: Order Confirmed (CQMO) */}
               {checkoutStep === 'confirmed' && lastPlacedOrder && (
                 <div className="py-6 text-center space-y-4">
                   <div className="w-12 h-12 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto">
@@ -905,7 +981,13 @@ export const CustomerMarketplace: React.FC<CustomerMarketplaceProps> = ({
 
                 <button
                   id="checkout-pay-btn"
-                  onClick={handleConfirmPayment}
+                  onClick={() => {
+                    if (cart.some(i => i.canonicalProduct.prescriptionRequired) && !verifiedPrescription) {
+                      setIsPrescriptionModalOpen(true);
+                      return;
+                    }
+                    setIsPaymentGatewayOpen(true);
+                  }}
                   className="w-full py-3 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-white font-semibold text-xs flex items-center justify-center gap-2 shadow-md transition-colors"
                 >
                   <CreditCard className="w-4 h-4 text-emerald-400" />

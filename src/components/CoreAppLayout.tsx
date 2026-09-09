@@ -7,7 +7,10 @@ import {
   CartItem,
   OrderRecord,
   AuditRecord,
-  OperationalException
+  OperationalException,
+  UserProfile,
+  PrescriptionRecord,
+  PaymentSession
 } from '../types';
 import { CustomerMarketplace } from './CustomerMarketplace';
 import { OrdersTracker } from './OrdersTracker';
@@ -50,11 +53,16 @@ interface CoreAppLayoutProps {
   orders: OrderRecord[];
   auditLogs: AuditRecord[];
   exceptions: OperationalException[];
+  userProfile: UserProfile;
+  onOpenAuth: () => void;
+  activePrescriptions?: PrescriptionRecord[];
+  onUploadPrescription?: (rx: PrescriptionRecord) => void;
   onAddToCart: (listing: ProductListing, canonicalProduct: CanonicalProduct) => void;
   onUpdateCartQty: (listingId: string, delta: number) => void;
   onRemoveFromCart: (listingId: string) => void;
   onClearCart: () => void;
-  onPlaceOrder: (name: string, email: string, address: string) => OrderRecord;
+  onPlaceOrder: (name: string, email: string, address: string, method?: string, idempotencyKey?: string) => OrderRecord;
+  onPaymentFailure?: (errMsg: string, session: PaymentSession) => void;
   onReorder: (order: OrderRecord) => void;
   onUpdateListingStock: (listingId: string, newStock: number) => void;
   onUpdateListingPrice: (listingId: string, newPrice: number) => void;
@@ -77,11 +85,16 @@ export const CoreAppLayout: React.FC<CoreAppLayoutProps> = ({
   orders,
   auditLogs,
   exceptions,
+  userProfile,
+  onOpenAuth,
+  activePrescriptions,
+  onUploadPrescription,
   onAddToCart,
   onUpdateCartQty,
   onRemoveFromCart,
   onClearCart,
   onPlaceOrder,
+  onPaymentFailure,
   onReorder,
   onUpdateListingStock,
   onUpdateListingPrice,
@@ -181,6 +194,19 @@ export const CoreAppLayout: React.FC<CoreAppLayoutProps> = ({
             <Layers className="w-3.5 h-3.5 text-zinc-500" />
             <span>Architecture</span>
           </button>
+
+          {/* User Profile / Auth Trigger */}
+          <button
+            id="user-profile-header-btn"
+            onClick={onOpenAuth}
+            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border border-emerald-200 bg-emerald-50 hover:bg-emerald-100 text-xs font-semibold text-emerald-900 shadow-xs transition-colors"
+          >
+            <User className="w-3.5 h-3.5 text-emerald-700" />
+            <span>{userProfile.name.split(' ')[0]}</span>
+            <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-emerald-200/80 text-emerald-800">
+              {userProfile.role}
+            </span>
+          </button>
         </div>
       </div>
 
@@ -256,11 +282,15 @@ export const CoreAppLayout: React.FC<CoreAppLayoutProps> = ({
             products={products}
             listings={listings}
             cart={cart}
+            userProfile={userProfile}
+            activePrescriptions={activePrescriptions}
             onAddToCart={onAddToCart}
             onUpdateCartQty={onUpdateCartQty}
             onRemoveFromCart={onRemoveFromCart}
             onClearCart={onClearCart}
             onPlaceOrder={onPlaceOrder}
+            onPaymentFailure={onPaymentFailure}
+            onUploadPrescription={onUploadPrescription}
             onNavigateToOrders={() => onSelectScreen('screen-orders')}
           />
         )}

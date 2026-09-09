@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { AuditRecord, OperationalException } from '../types';
+import { AuditRecord, OperationalException, SupportTicket, ProductReview } from '../types';
 import {
   ShieldAlert,
   Sliders,
@@ -12,24 +12,47 @@ import {
   Filter,
   Save,
   Lock,
-  ExternalLink
+  ExternalLink,
+  LifeBuoy,
+  MessageSquare,
+  Star,
+  ShieldCheck,
+  Send,
+  DollarSign
 } from 'lucide-react';
 
 interface AdminOperationsPortalProps {
   auditLogs: AuditRecord[];
   exceptions: OperationalException[];
+  tickets?: SupportTicket[];
+  reviews?: ProductReview[];
   onResolveException: (exceptionId: string, resolution: string) => void;
   onAppendAudit: (record: Omit<AuditRecord, 'id' | 'timestamp'>) => void;
+  onResolveTicket?: (ticketId: string, resolutionNote: string, refundAmount?: number) => void;
+  onModerateReview?: (reviewId: string, action: 'approved' | 'flagged' | 'hidden') => void;
 }
 
 export const AdminOperationsPortal: React.FC<AdminOperationsPortalProps> = ({
   auditLogs,
   exceptions,
+  tickets = [],
+  reviews = [],
   onResolveException,
   onAppendAudit,
+  onResolveTicket,
+  onModerateReview,
 }) => {
-  const [activeTab, setActiveTab] = useState<'exceptions' | 'audit' | 'ranking' | 'kpis'>('exceptions');
+  const [activeTab, setActiveTab] = useState<'exceptions' | 'audit' | 'ranking' | 'kpis' | 'support' | 'reviews'>('exceptions');
   const [auditSearch, setAuditSearch] = useState('');
+
+  // Support ticket admin state
+  const [selectedTicketId, setSelectedTicketId] = useState<string>(tickets[0]?.id || '');
+  const [ticketResolutionNote, setTicketResolutionNote] = useState('');
+  const [ticketRefundAmount, setTicketRefundAmount] = useState<number>(0);
+  const [ticketSuccessMsg, setTicketSuccessMsg] = useState<string | null>(null);
+
+  // Review moderation feedback
+  const [reviewModMsg, setReviewModMsg] = useState<string | null>(null);
 
   // Ranking weights configuration state (FR-CORE-06)
   const [priceWeight, setPriceWeight] = useState(40);
@@ -63,12 +86,64 @@ export const AdminOperationsPortal: React.FC<AdminOperationsPortalProps> = ({
     setTimeout(() => setRankingSaved(false), 3000);
   };
 
+  const handleTicketResolution = (ticketId: string) => {
+    if (!ticketResolutionNote.trim()) {
+      alert('Please enter a resolution note before resolving.');
+      return;
+    }
+
+    if (onResolveTicket) {
+      onResolveTicket(ticketId, ticketResolutionNote, ticketRefundAmount > 0 ? ticketRefundAmount : undefined);
+    }
+
+    onAppendAudit({
+      actorId: 'admin-lead-arun',
+      actorRole: 'Product Admin / Operations',
+      actionType: 'SUPPORT_TICKET_RESOLVED',
+      entityType: 'Support Ticket',
+      entityId: ticketId,
+      previousState: 'Status: Open / Investigating',
+      newState: `Status: Resolved (Refund: ₹${ticketRefundAmount})`,
+      reason: ticketResolutionNote,
+      correlationId: `corr-tkt-${Date.now().toString().slice(-6)}`,
+      sourceContext: 'Customer Support Desk'
+    });
+
+    setTicketSuccessMsg(`Ticket ${ticketId} resolved successfully and audit log updated.`);
+    setTicketResolutionNote('');
+    setTicketRefundAmount(0);
+    setTimeout(() => setTicketSuccessMsg(null), 4000);
+  };
+
+  const handleReviewAction = (reviewId: string, action: 'approved' | 'flagged' | 'hidden') => {
+    if (onModerateReview) {
+      onModerateReview(reviewId, action);
+    }
+
+    onAppendAudit({
+      actorId: 'admin-lead-arun',
+      actorRole: 'Product Admin / Operations',
+      actionType: 'REVIEW_MODERATION',
+      entityType: 'Product Review',
+      entityId: reviewId,
+      newState: `Status: ${action}`,
+      reason: `Admin compliance review under Section 9.2: ${action.toUpperCase()}`,
+      correlationId: `corr-rev-${Date.now().toString().slice(-6)}`,
+      sourceContext: 'Review Moderation Queue'
+    });
+
+    setReviewModMsg(`Review ${reviewId} marked as ${action.toUpperCase()}.`);
+    setTimeout(() => setReviewModMsg(null), 3500);
+  };
+
   const filteredAudit = auditLogs.filter(a =>
     a.actorId.toLowerCase().includes(auditSearch.toLowerCase()) ||
     a.actionType.toLowerCase().includes(auditSearch.toLowerCase()) ||
     a.entityId.toLowerCase().includes(auditSearch.toLowerCase()) ||
     a.reason?.toLowerCase().includes(auditSearch.toLowerCase())
   );
+
+  const activeSupportTicket = tickets.find(t => t.id === selectedTicketId) || tickets[0];
 
   return (
     <div id="admin-operations-root" className="space-y-6">
@@ -79,7 +154,7 @@ export const AdminOperationsPortal: React.FC<AdminOperationsPortalProps> = ({
             <div className="flex items-center gap-2">
               <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-50 text-rose-800 border border-rose-200">
                 <Lock className="w-3.5 h-3.5 text-rose-600" />
-                PRD Section 9.10 & Persona E: Admin & Operations
+                PRD Section 9.10 & Phase 2: Governance, Support Desk & Compliance
               </span>
               <span className="text-xs font-mono text-zinc-500 bg-zinc-100 px-2 py-0.5 rounded">
                 Role: Operations Lead / Governance
@@ -89,22 +164,41 @@ export const AdminOperationsPortal: React.FC<AdminOperationsPortalProps> = ({
               Marketplace Operations & Governance Console
             </h2>
             <p className="text-sm text-zinc-600">
-              Monitor North Star CQMO metrics, resolve operational exceptions, audit sensitive system events, and tune explainable ranking weights.
+              Monitor North Star CQMO metrics, resolve customer disputes, audit Section 18 immutable trails, and moderate clinical reviews.
             </p>
           </div>
 
-          <div className="flex items-center gap-2 bg-zinc-100 p-1 rounded-xl shrink-0">
+          {/* Tab Switcher */}
+          <div className="flex flex-wrap items-center gap-1.5 bg-zinc-100 p-1 rounded-xl shrink-0 text-xs">
             <button
               onClick={() => setActiveTab('exceptions')}
-              className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors ${
+              className={`px-3 py-1.5 font-semibold rounded-lg transition-colors ${
                 activeTab === 'exceptions' ? 'bg-white text-zinc-900 shadow-xs' : 'text-zinc-600 hover:text-zinc-900'
               }`}
             >
               Exceptions ({exceptions.filter(e => e.status !== 'resolved').length})
             </button>
             <button
+              onClick={() => setActiveTab('support')}
+              className={`px-3 py-1.5 font-semibold rounded-lg transition-colors flex items-center gap-1 ${
+                activeTab === 'support' ? 'bg-white text-zinc-900 shadow-xs' : 'text-zinc-600 hover:text-zinc-900'
+              }`}
+            >
+              <LifeBuoy className="w-3 h-3 text-rose-600" />
+              Support Desk ({tickets.filter(t => t.status !== 'Resolved').length})
+            </button>
+            <button
+              onClick={() => setActiveTab('reviews')}
+              className={`px-3 py-1.5 font-semibold rounded-lg transition-colors flex items-center gap-1 ${
+                activeTab === 'reviews' ? 'bg-white text-zinc-900 shadow-xs' : 'text-zinc-600 hover:text-zinc-900'
+              }`}
+            >
+              <MessageSquare className="w-3 h-3 text-blue-600" />
+              Reviews ({reviews.length})
+            </button>
+            <button
               onClick={() => setActiveTab('audit')}
-              className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors ${
+              className={`px-3 py-1.5 font-semibold rounded-lg transition-colors ${
                 activeTab === 'audit' ? 'bg-white text-zinc-900 shadow-xs' : 'text-zinc-600 hover:text-zinc-900'
               }`}
             >
@@ -112,19 +206,19 @@ export const AdminOperationsPortal: React.FC<AdminOperationsPortalProps> = ({
             </button>
             <button
               onClick={() => setActiveTab('ranking')}
-              className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors ${
+              className={`px-3 py-1.5 font-semibold rounded-lg transition-colors ${
                 activeTab === 'ranking' ? 'bg-white text-zinc-900 shadow-xs' : 'text-zinc-600 hover:text-zinc-900'
               }`}
             >
-              Ranking Config (FR-CORE-06)
+              Ranking Config
             </button>
             <button
               onClick={() => setActiveTab('kpis')}
-              className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors ${
+              className={`px-3 py-1.5 font-semibold rounded-lg transition-colors ${
                 activeTab === 'kpis' ? 'bg-white text-zinc-900 shadow-xs' : 'text-zinc-600 hover:text-zinc-900'
               }`}
             >
-              PRD KPIs (Sec 5)
+              PRD KPIs
             </button>
           </div>
         </div>
@@ -132,89 +226,85 @@ export const AdminOperationsPortal: React.FC<AdminOperationsPortalProps> = ({
         {/* PRD Section 5 Telemetry Metrics Strip */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-4 text-xs">
           <div className="p-3 rounded-lg bg-zinc-50 border border-zinc-100">
-            <div className="flex items-center justify-between text-zinc-500">
-              <span>North Star: CQMO</span>
-              <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-            </div>
-            <span className="text-xl font-bold font-mono text-zinc-900 mt-1 block">84 Orders</span>
-            <span className="text-[11px] text-emerald-700 font-medium">Completed Qualified Orders</span>
+            <span className="text-zinc-500 block text-[11px]">Active Exceptions</span>
+            <span className="text-base font-bold text-rose-700 font-mono">
+              {exceptions.filter(e => e.status !== 'resolved').length} Pending Review
+            </span>
           </div>
-
           <div className="p-3 rounded-lg bg-zinc-50 border border-zinc-100">
-            <span className="text-zinc-500 block">Search-to-Detail</span>
-            <span className="text-xl font-bold font-mono text-zinc-900 mt-1 block">68.4%</span>
-            <span className="text-[11px] text-emerald-700 font-medium">Target: ≥60% (Exceeded)</span>
+            <span className="text-zinc-500 block text-[11px]">Open Support Cases</span>
+            <span className="text-base font-bold text-zinc-900 font-mono">
+              {tickets.filter(t => t.status !== 'Resolved').length} Active Cases
+            </span>
           </div>
-
           <div className="p-3 rounded-lg bg-zinc-50 border border-zinc-100">
-            <span className="text-zinc-500 block">Stock Accuracy</span>
-            <span className="text-xl font-bold font-mono text-zinc-900 mt-1 block">98.9%</span>
-            <span className="text-[11px] text-emerald-700 font-medium">Target: ≥98% (Compliant)</span>
+            <span className="text-zinc-500 block text-[11px]">Section 18 Audit Log</span>
+            <span className="text-base font-bold text-zinc-900 font-mono">{auditLogs.length} Records</span>
           </div>
-
           <div className="p-3 rounded-lg bg-zinc-50 border border-zinc-100">
-            <span className="text-zinc-500 block">P95 Search Latency</span>
-            <span className="text-xl font-bold font-mono text-zinc-900 mt-1 block">1.24s</span>
-            <span className="text-[11px] text-emerald-700 font-medium">NFR-PERF-01 (≤2s)</span>
+            <span className="text-zinc-500 block text-[11px]">Clinical Efficacy Moderation</span>
+            <span className="text-base font-bold text-emerald-700">100% Verified</span>
           </div>
         </div>
       </div>
 
-      {/* Tab Content */}
+      {/* Tab: Operational Exceptions */}
       {activeTab === 'exceptions' && (
         <div className="bg-white border border-zinc-200 rounded-xl p-6 shadow-xs space-y-4">
           <div className="flex items-center justify-between border-b border-zinc-100 pb-3">
             <div className="flex items-center gap-2">
-              <AlertTriangle className="w-4 h-4 text-amber-600" />
+              <ShieldAlert className="w-4 h-4 text-rose-600" />
               <h3 className="text-base font-bold text-zinc-900">
-                Operational Exceptions Queue (FR-ADM-04 & Section 10)
+                Live Operational Exception Resolution Queue (FR-ADM-01)
               </h3>
             </div>
-            <span className="text-xs text-zinc-500">
-              {exceptions.filter(e => e.status !== 'resolved').length} Open Exceptions
+            <span className="text-xs font-mono text-zinc-500">
+              {exceptions.filter(e => e.status !== 'resolved').length} unresolved
             </span>
           </div>
 
           <div className="space-y-3">
-            {exceptions.map(exc => (
+            {exceptions.map(exception => (
               <div
-                key={exc.id}
-                className={`p-4 rounded-xl border transition-all space-y-3 ${
-                  exc.status === 'resolved'
-                    ? 'border-zinc-200 bg-zinc-50/40 opacity-70'
-                    : 'border-amber-200 bg-amber-50/30'
+                key={exception.id}
+                className={`p-4 rounded-xl border transition-all text-xs ${
+                  exception.status === 'resolved'
+                    ? 'border-zinc-200 bg-zinc-50/50 opacity-60'
+                    : 'border-rose-200 bg-rose-50/20 shadow-xs'
                 }`}
               >
                 <div className="flex items-start justify-between">
-                  <div className="flex items-start gap-2.5">
-                    <span className="p-1 rounded bg-amber-100 text-amber-800 text-[10px] font-mono font-bold uppercase mt-0.5">
-                      {exc.type}
-                    </span>
-                    <div>
-                      <h4 className="text-sm font-bold text-zinc-900">{exc.title}</h4>
-                      <p className="text-xs text-zinc-600 mt-0.5 leading-relaxed">{exc.description}</p>
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono font-bold text-zinc-900">{exception.id}</span>
+                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
+                        exception.severity === 'critical'
+                          ? 'bg-rose-100 text-rose-800'
+                          : 'bg-amber-100 text-amber-800'
+                      }`}>
+                        {exception.severity}
+                      </span>
                     </div>
+                    <h4 className="font-bold text-zinc-900">{exception.title}</h4>
+                    <p className="text-zinc-600">{exception.description}</p>
                   </div>
 
-                  <div className="text-right shrink-0">
-                    <span className={`text-[10px] font-mono font-semibold px-2 py-0.5 rounded-full ${
-                      exc.status === 'resolved' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
-                    }`}>
-                      {exc.status}
-                    </span>
-                    <span className="text-[11px] text-zinc-400 block mt-1">{exc.timestamp}</span>
-                  </div>
+                  <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-semibold ${
+                    exception.status === 'resolved' ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'
+                  }`}>
+                    {exception.status}
+                  </span>
                 </div>
 
-                {exc.status !== 'resolved' && (
-                  <div className="pt-2 border-t border-amber-200/60 flex flex-wrap items-center justify-between gap-2 text-xs">
-                    <span className="text-zinc-500 font-medium">Resolution Actions:</span>
-                    <div className="flex flex-wrap gap-2">
-                      {exc.resolutionOptions.map((opt, oIdx) => (
+                {exception.status !== 'resolved' && (
+                  <div className="mt-3 pt-3 border-t border-rose-100 flex items-center justify-between">
+                    <span className="text-zinc-500 font-mono text-[11px]">Logged: {exception.timestamp}</span>
+                    <div className="flex items-center gap-2">
+                      {exception.resolutionOptions.map((opt, idx) => (
                         <button
-                          key={oIdx}
-                          onClick={() => onResolveException(exc.id, opt)}
-                          className="px-2.5 py-1 rounded bg-white hover:bg-zinc-100 border border-zinc-200 text-zinc-800 font-medium text-[11px] transition-colors"
+                          key={idx}
+                          onClick={() => onResolveException(exception.id, opt)}
+                          className="px-2.5 py-1 rounded bg-white border border-zinc-300 hover:bg-zinc-100 text-zinc-800 font-medium text-xs transition-colors"
                         >
                           {opt}
                         </button>
@@ -228,24 +318,248 @@ export const AdminOperationsPortal: React.FC<AdminOperationsPortalProps> = ({
         </div>
       )}
 
-      {/* Tab: Immutable Audit Trail (PRD Section 18) */}
+      {/* Tab: Support Desk & Customer Disputes (Phase 2) */}
+      {activeTab === 'support' && (
+        <div className="bg-white border border-zinc-200 rounded-xl p-6 shadow-xs space-y-4 text-xs">
+          <div className="flex items-center justify-between border-b border-zinc-100 pb-3">
+            <div className="flex items-center gap-2">
+              <LifeBuoy className="w-4 h-4 text-rose-600" />
+              <h3 className="text-base font-bold text-zinc-900">
+                Customer Support & Dispute Desk (Phase 2)
+              </h3>
+            </div>
+            <span className="text-xs font-mono text-zinc-400">{tickets.length} Registered Cases</span>
+          </div>
+
+          {ticketSuccessMsg && (
+            <div className="p-3 rounded-lg bg-emerald-50 border border-emerald-200 text-xs font-semibold text-emerald-800 flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+              {ticketSuccessMsg}
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
+            {/* Tickets Left List */}
+            <div className="md:col-span-5 space-y-2.5">
+              <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider block">
+                Dispute Inquiries ({tickets.length})
+              </span>
+              {tickets.map(ticket => {
+                const isSelected = ticket.id === activeSupportTicket?.id;
+                return (
+                  <div
+                    key={ticket.id}
+                    onClick={() => setSelectedTicketId(ticket.id)}
+                    className={`p-3.5 rounded-xl border cursor-pointer transition-all ${
+                      isSelected
+                        ? 'border-zinc-900 bg-zinc-50 shadow-xs ring-2 ring-zinc-900/10'
+                        : 'border-zinc-200 bg-white hover:border-zinc-300'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="font-mono font-bold text-zinc-900">{ticket.id}</span>
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                        ticket.status === 'Resolved'
+                          ? 'bg-emerald-100 text-emerald-800'
+                          : 'bg-rose-100 text-rose-800'
+                      }`}>
+                        {ticket.status}
+                      </span>
+                    </div>
+                    <h4 className="font-bold text-zinc-900 mt-1 line-clamp-1">{ticket.subject}</h4>
+                    <div className="mt-2 flex items-center justify-between text-[11px] text-zinc-500">
+                      <span>{ticket.customerName}</span>
+                      <span className="font-semibold text-zinc-700">{ticket.category}</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Ticket Detail & Admin Resolution Right Box */}
+            {activeSupportTicket && (
+              <div className="md:col-span-7 bg-zinc-50 border border-zinc-200 rounded-xl p-4 space-y-4">
+                <div className="border-b border-zinc-200 pb-3 flex items-start justify-between">
+                  <div>
+                    <span className="font-mono font-bold text-zinc-900 text-sm">
+                      Case #{activeSupportTicket.id}
+                    </span>
+                    <h4 className="font-bold text-zinc-900 text-sm mt-0.5">{activeSupportTicket.subject}</h4>
+                    <p className="text-zinc-500 text-[11px] mt-0.5">
+                      Customer: {activeSupportTicket.customerName} ({activeSupportTicket.customerEmail}) • Order: {activeSupportTicket.orderId}
+                    </p>
+                  </div>
+                  <span className="px-2 py-1 rounded bg-zinc-200 text-zinc-800 font-bold text-[10px]">
+                    {activeSupportTicket.priority}
+                  </span>
+                </div>
+
+                {/* Message Thread */}
+                <div className="space-y-2.5 max-h-48 overflow-y-auto pr-1">
+                  {activeSupportTicket.messages.map(m => (
+                    <div key={m.id} className="p-3 rounded-lg bg-white border border-zinc-200/80 space-y-1">
+                      <div className="flex justify-between text-[10px] text-zinc-400">
+                        <span className="font-bold text-zinc-700">{m.senderName} ({m.sender})</span>
+                        <span>{m.timestamp}</span>
+                      </div>
+                      <p className="text-zinc-800 text-xs">{m.text}</p>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Resolution Desk */}
+                {activeSupportTicket.status !== 'Resolved' ? (
+                  <div className="pt-3 border-t border-zinc-200 space-y-3">
+                    <span className="font-bold text-zinc-900 block text-xs">
+                      Take Administrative Action & Log Resolution:
+                    </span>
+                    <textarea
+                      rows={2}
+                      placeholder="Enter resolution notes (e.g. Courier SLA breach acknowledged, customer credited)..."
+                      value={ticketResolutionNote}
+                      onChange={(e) => setTicketResolutionNote(e.target.value)}
+                      className="w-full px-3 py-2 border rounded-xl border-zinc-300 bg-white text-xs"
+                    />
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <DollarSign className="w-3.5 h-3.5 text-zinc-400" />
+                        <span className="text-[11px] text-zinc-600 font-medium">Refund Amount (₹):</span>
+                        <input
+                          type="number"
+                          step="10"
+                          value={ticketRefundAmount}
+                          onChange={(e) => setTicketRefundAmount(Number(e.target.value))}
+                          className="w-20 px-2 py-1 border rounded border-zinc-300 bg-white font-mono font-bold text-xs"
+                        />
+                      </div>
+                      <button
+                        onClick={() => handleTicketResolution(activeSupportTicket.id)}
+                        className="px-4 py-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-white font-semibold text-xs shadow-xs transition-colors"
+                      >
+                        Resolve & Commit Audit Log
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-900 text-xs">
+                    <span className="font-bold block">Case Resolved</span>
+                    <p className="text-[11px] mt-0.5">{activeSupportTicket.resolutionNote}</p>
+                    {activeSupportTicket.refundIssued && (
+                      <span className="font-mono font-bold text-emerald-800 block mt-1">
+                        Refund Issued: ₹{activeSupportTicket.refundIssued.toFixed(2)}
+                      </span>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Tab: Patient Review Moderation Queue (Phase 2) */}
+      {activeTab === 'reviews' && (
+        <div className="bg-white border border-zinc-200 rounded-xl p-6 shadow-xs space-y-4 text-xs">
+          <div className="flex items-center justify-between border-b border-zinc-100 pb-3">
+            <div>
+              <h3 className="text-base font-bold text-zinc-900 flex items-center gap-2">
+                <MessageSquare className="w-4 h-4 text-blue-600" />
+                Patient Review Compliance & Moderation Queue (PRD Section 9.2)
+              </h3>
+              <p className="text-zinc-500 text-[11px] mt-0.5">
+                Ensure customer submissions do not violate medical claims guidelines under the Drugs & Magic Remedies Act.
+              </p>
+            </div>
+            <span className="font-mono text-zinc-400">{reviews.length} Total Reviews</span>
+          </div>
+
+          {reviewModMsg && (
+            <div className="p-3 rounded-lg bg-blue-50 border border-blue-200 text-xs font-semibold text-blue-800 flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 text-blue-600" />
+              {reviewModMsg}
+            </div>
+          )}
+
+          <div className="space-y-3">
+            {reviews.map(review => (
+              <div key={review.id} className="p-4 rounded-xl border border-zinc-200 bg-zinc-50/50 space-y-2">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-zinc-900">{review.authorName}</span>
+                      <span className="text-[11px] text-zinc-400">({review.authorLocation})</span>
+                      <span className="font-mono font-semibold text-zinc-700 bg-zinc-200 px-2 py-0.5 rounded text-[10px]">
+                        {review.productName}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1 mt-0.5">
+                      {[1, 2, 3, 4, 5].map(s => (
+                        <Star key={s} className={`w-3 h-3 ${s <= review.rating ? 'fill-amber-400 text-amber-400' : 'text-zinc-300'}`} />
+                      ))}
+                      <span className="text-[11px] text-zinc-500 ml-1">Condition: {review.conditionTreated}</span>
+                    </div>
+                  </div>
+
+                  <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
+                    review.status === 'approved'
+                      ? 'bg-emerald-100 text-emerald-800'
+                      : review.status === 'flagged'
+                      ? 'bg-rose-100 text-rose-800'
+                      : 'bg-zinc-100 text-zinc-700'
+                  }`}>
+                    {review.status}
+                  </span>
+                </div>
+
+                <h5 className="font-bold text-zinc-900">{review.title}</h5>
+                <p className="text-zinc-600 leading-relaxed">{review.comment}</p>
+
+                <div className="pt-2 border-t border-zinc-200 flex items-center justify-between text-[11px]">
+                  <span className="text-zinc-400 font-mono">ID: {review.id} • {review.date}</span>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => handleReviewAction(review.id, 'approved')}
+                      className="px-2.5 py-1 rounded bg-emerald-600 hover:bg-emerald-700 text-white font-semibold transition-colors shadow-2xs"
+                    >
+                      Approve Review
+                    </button>
+                    <button
+                      onClick={() => handleReviewAction(review.id, 'flagged')}
+                      className="px-2.5 py-1 rounded bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-700 font-semibold transition-colors"
+                    >
+                      Flag for Medical Review
+                    </button>
+                    <button
+                      onClick={() => handleReviewAction(review.id, 'hidden')}
+                      className="px-2.5 py-1 rounded border border-zinc-200 text-zinc-600 hover:bg-zinc-100 transition-colors"
+                    >
+                      Hide
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Tab: Section 18 Audit Log */}
       {activeTab === 'audit' && (
         <div className="bg-white border border-zinc-200 rounded-xl p-6 shadow-xs space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-zinc-100 pb-3">
             <div className="flex items-center gap-2">
               <History className="w-4 h-4 text-zinc-900" />
               <h3 className="text-base font-bold text-zinc-900">
-                Immutable Operational Audit Log (Section 18.2 Schema)
+                Section 18: Regulatory Immutable Audit Trail
               </h3>
             </div>
-
             <div className="relative w-full sm:w-64">
-              <Search className="w-3.5 h-3.5 text-zinc-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              <Search className="w-3.5 h-3.5 text-zinc-400 absolute left-2.5 top-2.5" />
               <input
                 type="text"
+                placeholder="Search audit trail..."
                 value={auditSearch}
                 onChange={(e) => setAuditSearch(e.target.value)}
-                placeholder="Search audit records..."
                 className="w-full pl-8 pr-3 py-1.5 text-xs rounded-lg border border-zinc-200 bg-zinc-50"
               />
             </div>
@@ -349,13 +663,13 @@ export const AdminOperationsPortal: React.FC<AdminOperationsPortalProps> = ({
                 className="w-full accent-zinc-900 cursor-pointer"
               />
               <p className="text-zinc-500 text-[11px]">
-                Derived from licensed pharmacy reviews and on-time fulfillment records.
+                Rewards pharmacy partner rating and fulfillment SLA compliance rate.
               </p>
             </div>
 
             <div className="p-4 rounded-xl border border-zinc-200 bg-zinc-50/50 space-y-2">
               <div className="flex justify-between font-semibold text-zinc-900">
-                <span>3. Stock Availability & Freshness SLA</span>
+                <span>3. Stock Availability & Freshness</span>
                 <span className="font-mono">{stockWeight}%</span>
               </div>
               <input
@@ -367,13 +681,13 @@ export const AdminOperationsPortal: React.FC<AdminOperationsPortalProps> = ({
                 className="w-full accent-zinc-900 cursor-pointer"
               />
               <p className="text-zinc-500 text-[11px]">
-                Favors partners with verified inventory depth and recently updated catalog feeds.
+                Penalizes listings with stale timestamps (&gt;24h) and low stock count.
               </p>
             </div>
 
             <div className="p-4 rounded-xl border border-zinc-200 bg-zinc-50/50 space-y-2">
               <div className="flex justify-between font-semibold text-zinc-900">
-                <span>4. Verified Customer Feedback Score</span>
+                <span>4. Verified Customer Efficacy Feedback</span>
                 <span className="font-mono">{feedbackWeight}%</span>
               </div>
               <input
@@ -385,18 +699,16 @@ export const AdminOperationsPortal: React.FC<AdminOperationsPortalProps> = ({
                 className="w-full accent-zinc-900 cursor-pointer"
               />
               <p className="text-zinc-500 text-[11px]">
-                Restricted to verified buyers to prevent review manipulation (PRD Section 3.3).
+                Incorporates verified patient clinical reviews and repeat chronic order frequency.
               </p>
             </div>
           </div>
 
-          <div className="flex justify-end pt-3 border-t border-zinc-100">
+          <div className="pt-2 flex justify-end">
             <button
               onClick={handleSaveRankingWeights}
-              disabled={totalWeight !== 100}
-              className="px-4 py-2 rounded-lg bg-zinc-900 text-white font-semibold text-xs flex items-center gap-1.5 disabled:opacity-50 shadow-xs"
+              className="px-4 py-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-white font-semibold text-xs transition-colors shadow-xs"
             >
-              <Save className="w-3.5 h-3.5" />
               Save & Audit Model v1.4
             </button>
           </div>

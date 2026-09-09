@@ -1,4 +1,19 @@
-import { CanonicalProduct, ProductListing, OrderRecord, AuditRecord, OperationalException } from '../types';
+import {
+  CanonicalProduct,
+  ProductListing,
+  OrderRecord,
+  AuditRecord,
+  OperationalException,
+  UserProfile,
+  PrescriptionRecord,
+  ChronicSubscription,
+  ProductReview,
+  MedicineBatchRecord,
+  SupportTicket,
+  PharmacyGeoLocation,
+  DispatchRouteEstimate,
+  PartnerAnalyticsSummary
+} from '../types';
 
 export const CANONICAL_PRODUCTS: CanonicalProduct[] = [
   {
@@ -11,7 +26,17 @@ export const CANONICAL_PRODUCTS: CanonicalProduct[] = [
     prescriptionRequired: false,
     commonBrandEquivalent: 'Crocin / Calpol 500mg',
     brandPriceRef: 3.20, // branded price per tab
-    description: 'First-line medication used to treat pain and fever. Normalized comparison evaluates equivalent generic salt bio-equivalence.'
+    description: 'First-line medication used to treat pain and fever. Normalized comparison evaluates equivalent generic salt bio-equivalence.',
+    manufacturer: 'Cipla Therapeutics Ltd / Jan Aushadhi Certified',
+    drugSchedule: 'OTC (Over The Counter)',
+    storageGuidelines: 'Store below 25°C in a dry place away from direct sunlight.',
+    precautions: [
+      'Do not exceed 4,000 mg per 24-hour period to prevent hepatic toxicity.',
+      'Avoid concurrent alcohol consumption.',
+      'Consult physician if fever persists beyond 3 days.'
+    ],
+    sideEffects: ['Mild nausea', 'Rash (rare)', 'Liver enzyme elevation with excessive dosage'],
+    contraindications: ['Severe active liver impairment', 'Known hypersensitivity to acetaminophen']
   },
   {
     id: 'prod-para-650',
@@ -23,7 +48,16 @@ export const CANONICAL_PRODUCTS: CanonicalProduct[] = [
     prescriptionRequired: false,
     commonBrandEquivalent: 'Dolo 650mg',
     brandPriceRef: 4.10,
-    description: 'Higher strength paracetamol formulation for moderate fever, body aches, and discomfort.'
+    description: 'Higher strength paracetamol formulation for moderate fever, body aches, and discomfort.',
+    manufacturer: 'Micro Labs BioGenerics Division',
+    drugSchedule: 'OTC (Over The Counter)',
+    storageGuidelines: 'Store below 30°C in moisture-resistant blister packaging.',
+    precautions: [
+      'Spacing must be at least 4 to 6 hours between tablets.',
+      'Do not combine with other paracetamol-containing cold/flu syrups.'
+    ],
+    sideEffects: ['Mild abdominal discomfort', 'Sweating during fever defervescence'],
+    contraindications: ['Chronic hepatic failure', 'Severe renal impairment']
   },
   {
     id: 'prod-metformin-500',
@@ -35,7 +69,17 @@ export const CANONICAL_PRODUCTS: CanonicalProduct[] = [
     prescriptionRequired: true,
     commonBrandEquivalent: 'Glycomet 500 SR',
     brandPriceRef: 3.80,
-    description: 'Primary oral medication for type-2 diabetes mellitus management. Regulates hepatic glucose synthesis.'
+    description: 'Primary oral medication for type-2 diabetes mellitus management. Regulates hepatic glucose synthesis.',
+    manufacturer: 'Sun Pharma Generic Formulations',
+    drugSchedule: 'Schedule H (Prescription Required)',
+    storageGuidelines: 'Store between 15°C and 30°C. Protect from high humidity.',
+    precautions: [
+      'Must be swallowed whole; do not crush, chew, or split extended-release tablet.',
+      'Take with the evening meal to reduce gastrointestinal discomfort.',
+      'Periodic monitoring of renal function (eGFR) is mandatory.'
+    ],
+    sideEffects: ['Gastrointestinal upset', 'Transient diarrhea', 'Metallic taste', 'Vitamin B12 deficiency with prolonged use'],
+    contraindications: ['Severe renal dysfunction (eGFR < 30 mL/min)', 'Acute metabolic acidosis / ketoacidosis']
   },
   {
     id: 'prod-atorva-20',
@@ -47,7 +91,16 @@ export const CANONICAL_PRODUCTS: CanonicalProduct[] = [
     prescriptionRequired: true,
     commonBrandEquivalent: 'Lipitor / Atorva 20mg',
     brandPriceRef: 18.50,
-    description: 'Lipid-lowering agent prescribed to lower LDL cholesterol and decrease cardiovascular risks.'
+    description: 'Lipid-lowering agent prescribed to lower LDL cholesterol and decrease cardiovascular risks.',
+    manufacturer: 'Zydus Cadila Healthcare',
+    drugSchedule: 'Schedule H (Prescription Required)',
+    storageGuidelines: 'Store at 20°C to 25°C. Keep container tightly closed.',
+    precautions: [
+      'Report any unexplained muscle pain, tenderness, or weakness immediately (rhabdomyolysis warning).',
+      'Avoid large quantities of grapefruit juice while on therapy.'
+    ],
+    sideEffects: ['Myalgia', 'Mild headache', 'Transient elevation in serum transaminases'],
+    contraindications: ['Active liver disease', 'Pregnancy and lactation']
   },
   {
     id: 'prod-cetirizine-10',
@@ -59,7 +112,16 @@ export const CANONICAL_PRODUCTS: CanonicalProduct[] = [
     prescriptionRequired: false,
     commonBrandEquivalent: 'Zyrtec / Cetzine 10mg',
     brandPriceRef: 6.40,
-    description: 'Anti-allergy medication relieving allergic rhinitis, watery eyes, sneezing, and pruritus without excessive sedation.'
+    description: 'Anti-allergy medication relieving allergic rhinitis, watery eyes, sneezing, and pruritus without excessive sedation.',
+    manufacturer: 'Dr. Reddy’s Laboratories',
+    drugSchedule: 'OTC (Over The Counter)',
+    storageGuidelines: 'Store below 25°C in a dry place.',
+    precautions: [
+      'Caution when operating machinery or driving if mild drowsiness occurs.',
+      'Limit alcohol intake during treatment.'
+    ],
+    sideEffects: ['Mild drowsiness', 'Dry mouth', 'Headache'],
+    contraindications: ['Severe end-stage renal disease', 'Known cetirizine hypersensitivity']
   },
   {
     id: 'prod-amox-625',
@@ -71,7 +133,16 @@ export const CANONICAL_PRODUCTS: CanonicalProduct[] = [
     prescriptionRequired: true,
     commonBrandEquivalent: 'Augmentin 625 Duo',
     brandPriceRef: 24.50,
-    description: 'Broad-spectrum antibiotic combining penicillin-derived amoxicillin with a beta-lactamase inhibitor.'
+    description: 'Broad-spectrum antibiotic combining penicillin-derived amoxicillin with a beta-lactamase inhibitor.',
+    manufacturer: 'Alkem Laboratories Quality Generics',
+    drugSchedule: 'Schedule H1 (Controlled Antibiotic - Mandatory Rx)',
+    storageGuidelines: 'Store below 25°C in moisture-proof packaging. Discard if discolored.',
+    precautions: [
+      'Complete the entire prescribed course even if symptoms resolve early.',
+      'Take at the start of a meal to enhance absorption and reduce GI irritation.'
+    ],
+    sideEffects: ['Nausea', 'Mild diarrhea', 'Skin rash or urticaria'],
+    contraindications: ['History of penicillin anaphylaxis or amoxicillin-associated cholestatic jaundice']
   }
 ];
 
@@ -498,3 +569,465 @@ export const INITIAL_EXCEPTIONS: OperationalException[] = [
     ]
   }
 ];
+
+// Phase 1 MVP: Seed User Profile (FR-AUTH-01 to 04)
+export const DEFAULT_USER_PROFILE: UserProfile = {
+  id: 'usr-aarav-sharma',
+  name: 'Aarav Sharma',
+  email: 'aarav.sharma@example.com',
+  phone: '+91 98765 43210',
+  role: 'customer',
+  verified: true,
+  defaultAddressId: 'addr-home',
+  activePrescriptionIds: ['rx-metformin-chronic'],
+  addresses: [
+    {
+      id: 'addr-home',
+      label: 'Home',
+      recipientName: 'Aarav Sharma',
+      phone: '+91 98765 43210',
+      street: 'Flat 402, Greenfield Residences, Sector 14',
+      city: 'Gurugram, Haryana',
+      pincode: '122001',
+      isDefault: true
+    },
+    {
+      id: 'addr-office',
+      label: 'Office',
+      recipientName: 'Aarav Sharma',
+      phone: '+91 98765 43210',
+      street: 'Tech Park Tower 4, Cyber City Phase 2',
+      city: 'Gurugram, Haryana',
+      pincode: '122002',
+      isDefault: false
+    }
+  ]
+};
+
+// Phase 1 MVP: Verified Sample Prescriptions for AI OCR Demonstration (FR-SEARCH-05, FR-CART-02)
+export const SAMPLE_PRESCRIPTIONS: PrescriptionRecord[] = [
+  {
+    id: 'rx-metformin-chronic',
+    userId: 'usr-aarav-sharma',
+    patientName: 'Aarav Sharma (Age: 42, Male)',
+    doctorName: 'Dr. Priya Kulkarni, MD (General Medicine)',
+    doctorRegNumber: 'KMC-Reg-48291',
+    issueDate: '01 Sep 2026',
+    validUntil: '01 Mar 2027',
+    imageUrl: 'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?auto=format&fit=crop&w=800&q=80',
+    rawOcrText: `CLINICAL RX CARE HOSPITAL
+Dr. Priya Kulkarni, MD, Reg #48291
+Patient: Aarav Sharma, 42M | Date: 01-Sep-2026
+Dx: Type 2 Diabetes Mellitus / Dyslipidemia
+Rx:
+1. Metformin Hydrochloride ER 500mg - 1 tab OD after dinner x 90 days.
+2. Atorvastatin Calcium 20mg - 1 tab OD at bedtime x 90 days.
+*Generic equivalent substitution permitted.`,
+    extractedEntities: {
+      patientName: 'Aarav Sharma',
+      doctorName: 'Dr. Priya Kulkarni',
+      doctorRegNumber: 'KMC-Reg-48291',
+      prescriptionDate: '2026-09-01',
+      isExpired: false,
+      prescribedSalts: [
+        {
+          saltName: 'Metformin Hydrochloride (Extended Release)',
+          dosage: '500mg',
+          frequency: '1 tab OD',
+          duration: '90 days',
+          matchesGenericSalt: true
+        },
+        {
+          saltName: 'Atorvastatin Calcium',
+          dosage: '20mg',
+          frequency: '1 tab OD',
+          duration: '90 days',
+          matchesGenericSalt: true
+        }
+      ]
+    },
+    status: 'verified',
+    confidenceScore: 98,
+    validationNotes: [
+      'Prescription authentic and digitally matched to certified medical practitioner.',
+      'Active salts match genericMed canonical catalog (Metformin ER 500mg & Atorvastatin 20mg).',
+      'Valid for 180 days chronic maintenance dispensing.'
+    ]
+  },
+  {
+    id: 'rx-amox-acute',
+    userId: 'usr-aarav-sharma',
+    patientName: 'Aarav Sharma (Age: 42, Male)',
+    doctorName: 'Dr. Rajesh Sen, MBBS, DLO (ENT Specialist)',
+    doctorRegNumber: 'DMC-Reg-19842',
+    issueDate: '07 Sep 2026',
+    validUntil: '14 Sep 2026',
+    imageUrl: 'https://images.unsplash.com/photo-1576602976047-174e57a47881?auto=format&fit=crop&w=800&q=80',
+    rawOcrText: `APEX HEALTHCARE POLYCLINIC
+Dr. Rajesh Sen, MBBS, DLO, Reg #19842
+Patient: Aarav Sharma | Date: 07-Sep-2026
+Dx: Acute Bacterial Sinusitis
+Rx:
+1. Amoxicillin & Clavulanate 625mg - 1 tab BD x 5 days (Schedule H1).
+2. Paracetamol 650mg - 1 tab SOS for fever/pain.`,
+    extractedEntities: {
+      patientName: 'Aarav Sharma',
+      doctorName: 'Dr. Rajesh Sen',
+      doctorRegNumber: 'DMC-Reg-19842',
+      prescriptionDate: '2026-09-07',
+      isExpired: false,
+      prescribedSalts: [
+        {
+          saltName: 'Amoxicillin 500mg + Clavulanic Acid 125mg',
+          dosage: '625mg',
+          frequency: '1 tab BD',
+          duration: '5 days',
+          matchesGenericSalt: true
+        },
+        {
+          saltName: 'Paracetamol / Acetaminophen',
+          dosage: '650mg',
+          frequency: '1 tab SOS',
+          duration: '5 days',
+          matchesGenericSalt: true
+        }
+      ]
+    },
+    status: 'verified',
+    confidenceScore: 96,
+    validationNotes: [
+      'Schedule H1 antibiotic prescription verified.',
+      'Prescribed course validated for immediate pharmacy dispatch.'
+    ]
+  }
+];
+
+// Phase 2: Chronic Auto-Refill Subscriptions (Persona B)
+export const SAMPLE_SUBSCRIPTIONS: ChronicSubscription[] = [
+  {
+    id: 'sub-metformin-01',
+    userId: 'usr-aarav-sharma',
+    canonicalProduct: CANONICAL_PRODUCTS[1], // Metformin ER 500mg
+    listing: PRODUCT_LISTINGS[3], // MedPlus Metformin (₹0.55/tab)
+    quantity: 2, // 2 packs of 30 = 60 tabs
+    intervalDays: 30,
+    startDate: '10 Aug 2026',
+    nextRefillDate: '10 Sep 2026',
+    status: 'active',
+    deliveryAddress: 'Flat 402, Greenfield Residences, Sector 14, Gurugram',
+    monthlySavings: 282.00,
+    autoPayMethod: 'UPI AutoPay',
+    refillCount: 2
+  },
+  {
+    id: 'sub-atorva-02',
+    userId: 'usr-aarav-sharma',
+    canonicalProduct: CANONICAL_PRODUCTS[2], // Atorvastatin 20mg
+    listing: PRODUCT_LISTINGS[6], // MedPlus Atorvastatin
+    quantity: 2, // 2 packs of 15 = 30 tabs
+    intervalDays: 60,
+    startDate: '15 Jul 2026',
+    nextRefillDate: '15 Sep 2026',
+    status: 'active',
+    deliveryAddress: 'Flat 402, Greenfield Residences, Sector 14, Gurugram',
+    monthlySavings: 310.00,
+    autoPayMethod: 'Card Vault Token',
+    refillCount: 1
+  }
+];
+
+// Phase 2: Verified Patient Reviews with Regulatory Clinical Disclaimers
+export const SAMPLE_REVIEWS: ProductReview[] = [
+  {
+    id: 'rev-pcm-01',
+    productId: 'prod-para-500',
+    productName: 'Paracetamol IP 500mg',
+    authorName: 'Sunita Patel',
+    authorLocation: 'New Delhi',
+    rating: 5,
+    date: '04 Sep 2026',
+    isVerifiedPurchase: true,
+    title: 'Exact same relief as Crocin at 1/4th the price',
+    comment: 'I have been using Crocin for tension headaches for years. Switched to Jan Aushadhi Paracetamol 500mg on doctor recommendation. Zero difference in efficacy, worked in 25 minutes, and saved over 75% on the strip!',
+    conditionTreated: 'Fever & Tension Headache',
+    clinicalFeedbackTags: ['Exact bio-equivalent to Crocin', 'Fast acting (<30m)', '78% Cost Savings'],
+    helpfulCount: 42,
+    status: 'approved',
+    pharmacistVerifiedNote: 'Verified bio-equivalent formulation manufactured in WHO-GMP certified facility.'
+  },
+  {
+    id: 'rev-met-02',
+    productId: 'prod-met-500',
+    productName: 'Metformin Hydrochloride ER 500mg',
+    authorName: 'Ramesh Verma',
+    authorLocation: 'Gurugram',
+    rating: 5,
+    date: '28 Aug 2026',
+    isVerifiedPurchase: true,
+    title: 'Gentle on stomach, HbA1c under control',
+    comment: 'Extended release formula is smooth with no nausea or gastric irritation. My fasting glucose remains steady at 108 mg/dL. Monthly recurring subscription delivers right on time.',
+    conditionTreated: 'Type-2 Diabetes Mellitus',
+    clinicalFeedbackTags: ['Zero gastric irritation', 'Stable glycemic control', 'Smooth chronic delivery'],
+    helpfulCount: 38,
+    status: 'approved',
+    pharmacistVerifiedNote: 'Extended-release dissolution profile matches reference innovator standard.'
+  },
+  {
+    id: 'rev-amx-03',
+    productId: 'prod-amox-625',
+    productName: 'Amoxicillin & Potassium Clavulanate IP 625mg',
+    authorName: 'Kavita Nair',
+    authorLocation: 'Noida',
+    rating: 4,
+    date: '02 Sep 2026',
+    isVerifiedPurchase: true,
+    title: 'Cleared bacterial infection without issues',
+    comment: 'Prescribed for acute sinusitis. The generic Augmentin alternative was verified via prescription scanner within 2 minutes and delivered in 35 minutes by MedPlus.',
+    conditionTreated: 'Acute Bacterial Sinusitis',
+    clinicalFeedbackTags: ['Schedule H1 Verified', 'Rapid 35m delivery', 'Augmentin equivalent'],
+    helpfulCount: 19,
+    status: 'approved',
+    pharmacistVerifiedNote: 'Amoxicillin + Clavulanic acid ratio 4:1 verified compliant with IP monograph.'
+  },
+  {
+    id: 'rev-atv-04',
+    productId: 'prod-ator-20',
+    productName: 'Atorvastatin Calcium 20mg',
+    authorName: 'Vikram Malhotra',
+    authorLocation: 'Bengaluru',
+    rating: 5,
+    date: '22 Aug 2026',
+    isVerifiedPurchase: true,
+    title: 'Lipid profile normalized, great cost relief',
+    comment: 'Lipitor was costing me over ₹450 a month. This generic alternative is ₹98. My LDL dropped from 155 to 92 in 3 months of consistent dosage.',
+    conditionTreated: 'Hypercholesterolemia',
+    clinicalFeedbackTags: ['Lipitor bio-equivalent', 'LDL reduced by 40%', 'Over ₹350/mo saved'],
+    helpfulCount: 51,
+    status: 'approved',
+    pharmacistVerifiedNote: 'Bio-equivalence study demonstrated 99.2% Cmax/AUC curve match against Lipitor.'
+  }
+];
+
+// Phase 2: Batch-Level Expiry Radar & Cold-Chain Records
+export const SAMPLE_BATCH_RECORDS: MedicineBatchRecord[] = [
+  {
+    id: 'batch-001',
+    batchNumber: 'BATCH-PCM-2026-A1',
+    productId: 'prod-para-500',
+    productName: 'Paracetamol IP 500mg',
+    partnerId: 'partner-medplus',
+    partnerName: 'MedPlus Care Pharmacy (North Hub)',
+    mfgDate: '15 Jan 2026',
+    expiryDate: '15 Jan 2028',
+    stockUnits: 450,
+    requiresColdChain: false,
+    targetTempRange: '15°C - 25°C',
+    currentTempCelsius: 21.4,
+    status: 'Optimal',
+    daysToExpiry: 493,
+    qcCertificateNumber: 'QC-CERT-2026-8819'
+  },
+  {
+    id: 'batch-002',
+    batchNumber: 'BATCH-MET-2025-C4',
+    productId: 'prod-met-500',
+    productName: 'Metformin Hydrochloride ER 500mg',
+    partnerId: 'partner-medplus',
+    partnerName: 'MedPlus Care Pharmacy (North Hub)',
+    mfgDate: '10 Nov 2025',
+    expiryDate: '10 Nov 2027',
+    stockUnits: 280,
+    requiresColdChain: false,
+    targetTempRange: '15°C - 25°C',
+    currentTempCelsius: 22.1,
+    status: 'Optimal',
+    daysToExpiry: 427,
+    qcCertificateNumber: 'QC-CERT-2025-4491'
+  },
+  {
+    id: 'batch-003',
+    batchNumber: 'BATCH-AMX-2024-X2',
+    productId: 'prod-amox-625',
+    productName: 'Amoxicillin & Potassium Clavulanate IP 625mg',
+    partnerId: 'partner-apollo',
+    partnerName: 'Apollo Green Health Chemist (South Plaza)',
+    mfgDate: '01 Nov 2024',
+    expiryDate: '01 Nov 2026',
+    stockUnits: 45,
+    requiresColdChain: false,
+    targetTempRange: '15°C - 25°C',
+    currentTempCelsius: 20.8,
+    status: 'Near Expiry (<6m)',
+    daysToExpiry: 53,
+    qcCertificateNumber: 'QC-CERT-2024-1120'
+  },
+  {
+    id: 'batch-004',
+    batchNumber: 'BATCH-INS-2026-COLD',
+    productId: 'prod-ator-20',
+    productName: 'Atorvastatin Calcium 20mg (Cold Store)',
+    partnerId: 'partner-janaushadhi',
+    partnerName: 'Jan Aushadhi Partner Kendra (Civil Lines)',
+    mfgDate: '15 Jun 2026',
+    expiryDate: '15 Jun 2027',
+    stockUnits: 120,
+    requiresColdChain: true,
+    targetTempRange: '2°C - 8°C',
+    currentTempCelsius: 4.2,
+    status: 'Optimal',
+    daysToExpiry: 279,
+    qcCertificateNumber: 'QC-CERT-2026-COLD-99'
+  }
+];
+
+// Phase 2: Customer Support & Dispute Desk
+export const SAMPLE_SUPPORT_TICKETS: SupportTicket[] = [
+  {
+    id: 'CAS-8821',
+    orderId: 'ORD-98421',
+    customerName: 'Aarav Sharma',
+    customerEmail: 'aarav.sharma@example.com',
+    category: 'Delayed Delivery',
+    priority: 'P1 High',
+    status: 'Resolved',
+    createdAt: '08 Sep 2026 14:10',
+    resolvedAt: '08 Sep 2026 14:45',
+    subject: 'Express rider delayed due to rain',
+    resolutionNote: 'Pharmacist contacted courier dispatch; order delivered 15 mins later and ₹50 convenience fee refunded.',
+    refundIssued: 50.00,
+    messages: [
+      {
+        id: 'msg-01',
+        sender: 'customer',
+        senderName: 'Aarav Sharma',
+        text: 'Hello, the rider tracker has been stationary at Sector 14 junction for 20 minutes.',
+        timestamp: '14:10'
+      },
+      {
+        id: 'msg-02',
+        sender: 'support_agent',
+        senderName: 'Neha (Fulfillment Ops)',
+        text: 'Hi Aarav, our North Hub dispatcher confirmed heavy waterlogging at the underpass. Rider Rahul has taken the elevated flyover and is 4 mins away.',
+        timestamp: '14:18'
+      },
+      {
+        id: 'msg-03',
+        sender: 'support_agent',
+        senderName: 'Neha (Fulfillment Ops)',
+        text: 'We have also initiated a ₹50 credit to your original payment method for the delay SLA violation.',
+        timestamp: '14:45'
+      }
+    ]
+  },
+  {
+    id: 'CAS-9942',
+    orderId: 'ORD-99104',
+    customerName: 'Aarav Sharma',
+    customerEmail: 'aarav.sharma@example.com',
+    category: 'Prescription Query',
+    priority: 'P2 Medium',
+    status: 'Open',
+    createdAt: '09 Sep 2026 08:30',
+    subject: 'Inquiry regarding Metformin 500mg vs 850mg dosage split',
+    messages: [
+      {
+        id: 'msg-10',
+        sender: 'customer',
+        senderName: 'Aarav Sharma',
+        text: 'My doctor suggested maybe switching to 850mg next month. Can I substitute with two 500mg tabs safely or wait for new prescription?',
+        timestamp: '08:30'
+      },
+      {
+        id: 'msg-11',
+        sender: 'pharmacist',
+        senderName: 'Dr. Anita Desai, Lead Pharmacist (Reg #5102)',
+        text: 'Hello Aarav. Per clinical regulations (ADR-002), any dosage change requires an updated prescription. Please do not double up 500mg tablets as the extended-release absorption kinetics differ.',
+        timestamp: '08:45'
+      }
+    ]
+  }
+];
+
+// Phase 2: Partner Geolocations & Metro Service Zones
+export const PARTNER_GEOLOCATIONS: Record<string, PharmacyGeoLocation> = {
+  'partner-medplus': {
+    partnerId: 'partner-medplus',
+    partnerName: 'MedPlus Care Pharmacy (North Hub)',
+    latitude: 28.4721,
+    longitude: 77.0422,
+    address: 'Plot 12, Sector 14 Main Market, Gurugram',
+    serviceRadiusKm: 8.5,
+    hubType: 'Metro Super Hub',
+    averageDispatchMinutes: 14,
+    coldChainEquipped: true
+  },
+  'partner-apollo': {
+    partnerId: 'partner-apollo',
+    partnerName: 'Apollo Green Health Chemist (South Plaza)',
+    latitude: 28.4412,
+    longitude: 77.0851,
+    address: 'South Plaza Arcade, Sector 54, Gurugram',
+    serviceRadiusKm: 10.0,
+    hubType: 'Metro Super Hub',
+    averageDispatchMinutes: 18,
+    coldChainEquipped: true
+  },
+  'partner-janaushadhi': {
+    partnerId: 'partner-janaushadhi',
+    partnerName: 'Jan Aushadhi Partner Kendra (Civil Lines)',
+    latitude: 28.4635,
+    longitude: 77.0298,
+    address: 'Civil Lines Road, Near District Hospital, Gurugram',
+    serviceRadiusKm: 6.0,
+    hubType: 'Local Jan Aushadhi',
+    averageDispatchMinutes: 22,
+    coldChainEquipped: true
+  },
+  'partner-genericcare': {
+    partnerId: 'partner-genericcare',
+    partnerName: 'GenericCare Express Chemist (West Center)',
+    latitude: 28.4901,
+    longitude: 77.0112,
+    address: 'West Center Metro Concourse, Gurugram',
+    serviceRadiusKm: 7.0,
+    hubType: 'Express Chemist',
+    averageDispatchMinutes: 16,
+    coldChainEquipped: false
+  }
+};
+
+// Phase 2: Pharmacy Partner Analytics Summary
+export const SAMPLE_PARTNER_ANALYTICS: Record<string, PartnerAnalyticsSummary> = {
+  'partner-medplus': {
+    partnerId: 'partner-medplus',
+    period: 'September 2026 MTD',
+    totalGrossRevenue: 148520,
+    totalOrdersFulfilled: 412,
+    slaCompliancePercent: 98.6,
+    averageFulfillmentTimeMins: 14.2,
+    chronicRetentionRate: 78.4,
+    batchWasteRate: 0.4,
+    topSellingMolecules: [
+      { name: 'Paracetamol IP 500mg', units: 1420, revenue: 19880 },
+      { name: 'Metformin ER 500mg', units: 980, revenue: 32340 },
+      { name: 'Atorvastatin 20mg', units: 620, revenue: 38440 },
+      { name: 'Amoxicillin/Clav 625mg', units: 480, revenue: 47040 }
+    ]
+  },
+  'partner-apollo': {
+    partnerId: 'partner-apollo',
+    period: 'September 2026 MTD',
+    totalGrossRevenue: 122400,
+    totalOrdersFulfilled: 318,
+    slaCompliancePercent: 97.2,
+    averageFulfillmentTimeMins: 17.8,
+    chronicRetentionRate: 72.1,
+    batchWasteRate: 0.9,
+    topSellingMolecules: [
+      { name: 'Atorvastatin 20mg', units: 710, revenue: 46150 },
+      { name: 'Metformin ER 500mg', units: 840, revenue: 29400 },
+      { name: 'Paracetamol IP 500mg', units: 990, revenue: 14850 }
+    ]
+  }
+};
+

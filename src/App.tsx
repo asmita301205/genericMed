@@ -1,15 +1,34 @@
 import React, { useState } from 'react';
-import { ActiveTab, AppScreen, HotlinkAsset, CartItem, OrderRecord, AuditRecord, OperationalException, ProductListing, CanonicalProduct } from './types';
+import {
+  ActiveTab,
+  AppScreen,
+  HotlinkAsset,
+  CartItem,
+  OrderRecord,
+  AuditRecord,
+  OperationalException,
+  ProductListing,
+  CanonicalProduct,
+  UserProfile,
+  PrescriptionRecord,
+  NotificationMessage,
+  PaymentSession,
+  AppUserRole
+} from './types';
 import { CoreAppLayout } from './components/CoreAppLayout';
 import { ArchitectureDiagram } from './components/ArchitectureDiagram';
 import { PrdViewer } from './components/PrdViewer';
 import { HotlinkStudio } from './components/HotlinkStudio';
+import { AuthModal } from './components/AuthModal';
+import { NotificationToastContainer } from './components/NotificationToastContainer';
 import {
   CANONICAL_PRODUCTS,
   PRODUCT_LISTINGS,
   INITIAL_ORDERS,
   INITIAL_AUDIT_LOGS,
-  INITIAL_EXCEPTIONS
+  INITIAL_EXCEPTIONS,
+  DEFAULT_USER_PROFILE,
+  SAMPLE_PRESCRIPTIONS
 } from './data/genericMedData';
 import {
   LayoutDashboard,
@@ -141,6 +160,85 @@ export function App() {
   const [auditLogs, setAuditLogs] = useState<AuditRecord[]>(INITIAL_AUDIT_LOGS);
   const [exceptions, setExceptions] = useState<OperationalException[]>(INITIAL_EXCEPTIONS);
 
+  // Phase 1 MVP: User Profile & Auth state
+  const [userProfile, setUserProfile] = useState<UserProfile>(DEFAULT_USER_PROFILE);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+
+  // Phase 1 MVP: Prescriptions state
+  const [prescriptions, setPrescriptions] = useState<PrescriptionRecord[]>(SAMPLE_PRESCRIPTIONS);
+
+  // Phase 1 MVP: Transactional Notifications (SMS / WhatsApp)
+  const [notifications, setNotifications] = useState<NotificationMessage[]>([
+    {
+      id: 'notif-welcome',
+      type: 'sms',
+      recipient: DEFAULT_USER_PROFILE.phone,
+      title: 'Welcome to genericMed',
+      body: 'Verified generic medicine discovery enabled. Save up to 80% on chronic maintenance prescriptions.',
+      timestamp: 'Just now',
+      status: 'delivered'
+    }
+  ]);
+
+  const handleDismissNotification = (id: string) => {
+    setNotifications(prev => prev.filter(n => n.id !== id));
+  };
+
+  const handleSwitchRole = (role: AppUserRole) => {
+    setUserProfile(prev => ({ ...prev, role }));
+    if (role === 'customer') setActiveScreenId('screen-discovery');
+    if (role === 'partner') setActiveScreenId('screen-partner-store');
+    if (role === 'admin') setActiveScreenId('screen-admin-ops');
+  };
+
+  const handleUploadPrescription = (rx: PrescriptionRecord) => {
+    setPrescriptions(prev => [rx, ...prev.filter(p => p.id !== rx.id)]);
+    handleAppendAudit({
+      actorId: userProfile.id,
+      actorRole: 'Customer',
+      actionType: 'PRESCRIPTION_VERIFIED_AI',
+      entityType: 'Prescription',
+      entityId: rx.id,
+      newState: 'verified',
+      reason: `Google GenAI Vision verified doctor ${rx.doctorName} (${rx.doctorRegNumber}) with ${rx.confidenceScore}% confidence.`,
+      correlationId: `corr-rx-${Date.now().toString().slice(-6)}`,
+      sourceContext: 'AI Prescription Scanner'
+    });
+  };
+
+  const handlePaymentFailure = (errorMsg: string, session: PaymentSession) => {
+    const exceptionId = `EXC-${Math.floor(200 + Math.random() * 800)}`;
+    const newException: OperationalException = {
+      id: exceptionId,
+      type: 'payment_mismatch',
+      title: 'Banking Gateway Timeout / Auth Decline',
+      description: `Customer attempted payment of ₹${session.amount.toFixed(2)} via ${session.provider} (Idempotency: ${session.idempotencyKey}), but transaction failed: ${errorMsg}`,
+      entityId: session.transactionRef,
+      severity: 'medium',
+      status: 'open',
+      timestamp: 'Just now',
+      resolutionOptions: [
+        'Allow customer one-click retry with alternate payment method',
+        'Verify gateway webhook logs for late settlement callback',
+        'Release temporary stock reservation locks'
+      ]
+    };
+    setExceptions(prev => [newException, ...prev]);
+
+    handleAppendAudit({
+      actorId: userProfile.id,
+      actorRole: 'Customer',
+      actionType: 'PAYMENT_FAILED',
+      entityType: 'Payment Session',
+      entityId: session.transactionRef,
+      previousState: 'initiated',
+      newState: 'failed',
+      reason: `Payment error: ${errorMsg}. Idempotency key: ${session.idempotencyKey}`,
+      correlationId: session.idempotencyKey,
+      sourceContext: 'Payment Gateway Integration'
+    });
+  };
+
   // Cart operations
   const handleAddToCart = (listing: ProductListing, canonicalProduct: CanonicalProduct) => {
     setCart(prev => {
@@ -173,9 +271,16 @@ export function App() {
   };
 
   // Order creation (FR-ORDER-01, CQMO)
-  const handlePlaceOrder = (customerName: string, customerEmail: string, address: string): OrderRecord => {
+  const handlePlaceOrder = (
+    customerName: string,
+    customerEmail: string,
+    address: string,
+    method?: string,
+    idempotencyKey?: string
+  ): OrderRecord => {
     const total = cart.reduce((sum, item) => sum + (item.listing.packPrice * item.quantity), 0);
     const orderId = `ORD-2026-${Math.floor(1000 + Math.random() * 9000)}`;
+    const deliveryPin = Math.floor(1000 + Math.random() * 9000).toString();
 
     const newOrder: OrderRecord = {
       id: orderId,
@@ -187,29 +292,60 @@ export function App() {
       paymentStatus: 'Verified Paid',
       createdAt: 'Just now',
       deliveryAddress: address,
+      deliveryPin,
+      paymentMethod: method || 'Razorpay / UPI',
+      idempotencyKey: idempotencyKey || `idemp-${Date.now()}`,
       trackingTimeline: [
         { status: 'Order Created & Constraints Validated (FR-ORDER-01)', timestamp: 'Just now', completed: true },
-        { status: 'Payment Reconciled & Verified via Gateway', timestamp: 'Just now', completed: true },
+        { status: `Payment Reconciled via ${method || 'Gateway'}`, timestamp: 'Just now', completed: true },
         { status: 'Fulfillment Order Transmitted to Partner Chemist', timestamp: 'In progress', completed: false },
         { status: 'Dispensed & Quality Sealed by Pharmacist', timestamp: 'Pending', completed: false },
         { status: 'Out for Express Delivery', timestamp: 'Pending', completed: false },
-        { status: 'Delivered to Customer', timestamp: 'Expected in 45 mins', completed: false }
+        { status: `Delivered to Customer (Handover PIN: ${deliveryPin})`, timestamp: 'Expected in 45 mins', completed: false }
       ]
     };
 
     setOrders(prev => [newOrder, ...prev]);
     setCart([]);
 
+    // Dispatch Simulated SMS Notification (PRD FR-NOTIF-01)
+    const smsAlert: NotificationMessage = {
+      id: `notif-${Date.now()}`,
+      type: 'sms',
+      recipient: userProfile.phone,
+      title: `Order #${orderId} Confirmed & Paid`,
+      body: `genericMed: Order #${orderId} confirmed (₹${total.toFixed(2)}). Handover PIN: ${deliveryPin}. Chemist is packing your medicine.`,
+      timestamp: 'Just now',
+      status: 'delivered',
+      orderId
+    };
+    setNotifications(prev => [smsAlert, ...prev]);
+
+    // Simulated subsequent WhatsApp dispatch alert
+    setTimeout(() => {
+      const waAlert: NotificationMessage = {
+        id: `notif-wa-${Date.now()}`,
+        type: 'whatsapp',
+        recipient: userProfile.phone,
+        title: 'Package Dispatched by Chemist',
+        body: `Your generic medicine order #${orderId} is packed with tamper seal. Express courier on the way! Deliver PIN: ${deliveryPin}.`,
+        timestamp: 'Just now',
+        status: 'delivered',
+        orderId
+      };
+      setNotifications(prev => [waAlert, ...prev]);
+    }, 4000);
+
     // Append to Section 18 Audit Log
     handleAppendAudit({
-      actorId: 'customer-user',
+      actorId: userProfile.id,
       actorRole: 'Customer',
       actionType: 'ORDER_CREATED_AND_PAID',
       entityType: 'Order',
       entityId: orderId,
       newState: 'Paid/Confirmed',
-      reason: `Customer completed discovery checkout for ${newOrder.items.length} generic medicine(s). Total: ₹${total.toFixed(2)}.`,
-      correlationId: `corr-ord-${Math.floor(100000 + Math.random() * 900000)}`,
+      reason: `Customer completed discovery checkout for ${newOrder.items.length} generic medicine(s). Total: ₹${total.toFixed(2)}. Method: ${method || 'UPI'}.`,
+      correlationId: idempotencyKey || `corr-ord-${Math.floor(100000 + Math.random() * 900000)}`,
       sourceContext: 'Customer Checkout'
     });
 
@@ -418,11 +554,16 @@ export function App() {
             orders={orders}
             auditLogs={auditLogs}
             exceptions={exceptions}
+            userProfile={userProfile}
+            onOpenAuth={() => setIsAuthModalOpen(true)}
+            activePrescriptions={prescriptions}
+            onUploadPrescription={handleUploadPrescription}
             onAddToCart={handleAddToCart}
             onUpdateCartQty={handleUpdateCartQty}
             onRemoveFromCart={handleRemoveFromCart}
             onClearCart={handleClearCart}
             onPlaceOrder={handlePlaceOrder}
+            onPaymentFailure={handlePaymentFailure}
             onReorder={handleReorder}
             onUpdateListingStock={handleUpdateListingStock}
             onUpdateListingPrice={handleUpdateListingPrice}
@@ -454,6 +595,25 @@ export function App() {
           />
         )}
       </main>
+
+      {/* Auth & Session Profile Modal (PRD FR-AUTH-01 to 04) */}
+      <AuthModal
+        isOpen={isAuthModalOpen}
+        onClose={() => setIsAuthModalOpen(false)}
+        user={userProfile}
+        onUpdateUser={(updated) => setUserProfile(updated)}
+        onSwitchRole={handleSwitchRole}
+      />
+
+      {/* Simulated Transactional Notifications Container (PRD FR-NOTIF-01) */}
+      <NotificationToastContainer
+        notifications={notifications}
+        onDismiss={handleDismissNotification}
+        onViewOrder={(orderId) => {
+          setActiveScreenId('screen-orders');
+          setActiveTab('app');
+        }}
+      />
 
       {/* Persistent Status & Compliance Footer */}
       <footer id="main-footer" className="bg-white border-t border-zinc-200 mt-auto py-4 text-xs text-zinc-500">

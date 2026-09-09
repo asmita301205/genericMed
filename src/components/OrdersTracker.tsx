@@ -10,22 +10,33 @@ import {
   ShieldCheck,
   ChevronRight,
   ExternalLink,
-  MessageSquare
+  MessageSquare,
+  Navigation,
+  Star,
+  Radio,
+  Sparkles
 } from 'lucide-react';
 
 interface OrdersTrackerProps {
   orders: OrderRecord[];
   onReorder: (order: OrderRecord) => void;
   onNavigateToDiscovery: () => void;
+  onOpenRouteTracker?: (order: OrderRecord) => void;
+  onOpenSubscriptions?: () => void;
+  onOpenSupportTicket?: (orderId: string) => void;
+  onOpenProductReviews?: (productId: string) => void;
 }
 
 export const OrdersTracker: React.FC<OrdersTrackerProps> = ({
   orders,
   onReorder,
   onNavigateToDiscovery,
+  onOpenRouteTracker,
+  onOpenSubscriptions,
+  onOpenSupportTicket,
+  onOpenProductReviews,
 }) => {
   const [selectedOrderId, setSelectedOrderId] = useState<string>(orders[0]?.id || '');
-  const [supportMessageSent, setSupportMessageSent] = useState(false);
 
   const activeOrder = orders.find(o => o.id === selectedOrderId) || orders[0];
 
@@ -38,26 +49,38 @@ export const OrdersTracker: React.FC<OrdersTrackerProps> = ({
             <div className="flex items-center gap-2">
               <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-50 text-blue-800 border border-blue-200">
                 <Truck className="w-3.5 h-3.5 text-blue-600" />
-                PRD Section 9.7 & 11: Order Lifecycle & Tracking
+                PRD Section 9.7 & Phase 2: Repeat Care & Fleet Telemetry
               </span>
               <span className="text-xs font-mono text-zinc-500 bg-zinc-100 px-2 py-0.5 rounded">
                 Persona B (Repeat Orders)
               </span>
             </div>
             <h2 className="text-2xl font-bold tracking-tight text-zinc-900">
-              Orders & Fulfillment Tracking
+              Orders, Fulfillment & Auto-Refills
             </h2>
             <p className="text-sm text-zinc-600">
-              Track verified order progression, inspect pharmacy fulfillment timestamps, and reorder chronic medications in one click.
+              Track real-time courier GPS & cold-chain transit, configure recurring chronic subscriptions, and resolve fulfillment issues.
             </p>
           </div>
 
-          <button
-            onClick={onNavigateToDiscovery}
-            className="px-4 py-2.5 rounded-xl border border-zinc-200 hover:bg-zinc-50 text-xs font-semibold text-zinc-800 transition-colors shadow-xs shrink-0"
-          >
-            + New Medicine Search
-          </button>
+          <div className="flex items-center gap-2 shrink-0">
+            {onOpenSubscriptions && (
+              <button
+                onClick={onOpenSubscriptions}
+                className="px-3.5 py-2.5 rounded-xl border border-blue-200 bg-blue-50 hover:bg-blue-100 text-xs font-semibold text-blue-800 transition-colors shadow-xs flex items-center gap-1.5"
+              >
+                <RotateCcw className="w-3.5 h-3.5 text-blue-600" />
+                Chronic Subscriptions (5% Off)
+              </button>
+            )}
+
+            <button
+              onClick={onNavigateToDiscovery}
+              className="px-4 py-2.5 rounded-xl border border-zinc-200 hover:bg-zinc-50 text-xs font-semibold text-zinc-800 transition-colors shadow-xs"
+            >
+              + New Medicine Search
+            </button>
+          </div>
         </div>
 
         {/* Quick Order Count Statistics */}
@@ -77,8 +100,11 @@ export const OrdersTracker: React.FC<OrdersTrackerProps> = ({
             <span className="text-emerald-700 font-semibold">100% Reconciled</span>
           </div>
           <div className="p-2.5 rounded-lg bg-zinc-50 border border-zinc-100">
-            <span className="text-zinc-500 block">Customer SLA</span>
-            <span className="text-zinc-900 font-semibold font-mono">45 Mins North Hub</span>
+            <span className="text-zinc-500 block">GPS Telemetry</span>
+            <span className="text-emerald-700 font-semibold flex items-center gap-1">
+              <Radio className="w-3 h-3 text-emerald-600 animate-pulse" />
+              Active Fleet Link
+            </span>
           </div>
         </div>
       </div>
@@ -166,19 +192,43 @@ export const OrdersTracker: React.FC<OrdersTrackerProps> = ({
                   </p>
                 </div>
 
-                <button
-                  id={`reorder-btn-${activeOrder.id}`}
-                  onClick={() => onReorder(activeOrder)}
-                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-white text-xs font-semibold transition-colors shrink-0 shadow-xs"
-                >
-                  <RotateCcw className="w-3.5 h-3.5" />
-                  One-Click Reorder (Persona B)
-                </button>
+                <div className="flex items-center gap-2 shrink-0">
+                  {onOpenRouteTracker && (
+                    <button
+                      id={`live-route-btn-${activeOrder.id}`}
+                      onClick={() => onOpenRouteTracker(activeOrder)}
+                      className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold transition-colors shadow-xs"
+                    >
+                      <Navigation className="w-3.5 h-3.5" />
+                      Live Route & Cold-Chain
+                    </button>
+                  )}
+
+                  <button
+                    id={`reorder-btn-${activeOrder.id}`}
+                    onClick={() => onReorder(activeOrder)}
+                    className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-white text-xs font-semibold transition-colors shadow-xs"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5" />
+                    Reorder
+                  </button>
+                </div>
               </div>
 
               {/* Items in this Order */}
               <div className="space-y-2">
-                <span className="text-xs font-semibold text-zinc-900 block">Ordered Medicines</span>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-semibold text-zinc-900 block">Ordered Medicines</span>
+                  {activeOrder.status === 'Completed' && onOpenProductReviews && (
+                    <button
+                      onClick={() => onOpenProductReviews(activeOrder.items[0]?.canonicalProduct.id)}
+                      className="text-xs text-amber-700 hover:text-amber-800 font-semibold flex items-center gap-1"
+                    >
+                      <Star className="w-3 h-3 fill-amber-500 text-amber-500" />
+                      Write Verified Review
+                    </button>
+                  )}
+                </div>
                 <div className="space-y-2">
                   {activeOrder.items.map(item => (
                     <div key={item.listingId} className="p-3 rounded-lg bg-zinc-50 border border-zinc-100 flex items-center justify-between text-xs">
@@ -197,9 +247,17 @@ export const OrdersTracker: React.FC<OrdersTrackerProps> = ({
               </div>
 
               {/* Delivery Address */}
-              <div className="p-3 rounded-lg border border-zinc-100 bg-zinc-50/50 text-xs">
-                <span className="text-zinc-400 block font-medium">Delivery Address</span>
-                <span className="text-zinc-800 font-medium">{activeOrder.deliveryAddress}</span>
+              <div className="p-3 rounded-lg border border-zinc-100 bg-zinc-50/50 text-xs flex items-center justify-between">
+                <div>
+                  <span className="text-zinc-400 block font-medium">Delivery Address</span>
+                  <span className="text-zinc-800 font-medium">{activeOrder.deliveryAddress}</span>
+                </div>
+                {activeOrder.deliveryPin && (
+                  <div className="text-right">
+                    <span className="text-[10px] text-zinc-400 block">Security PIN</span>
+                    <span className="font-mono font-bold text-zinc-900 text-sm">{activeOrder.deliveryPin}</span>
+                  </div>
+                )}
               </div>
 
               {/* Real-Time Timeline Milestones */}
@@ -231,16 +289,17 @@ export const OrdersTracker: React.FC<OrdersTrackerProps> = ({
 
               {/* Support & Issue Resolution */}
               <div className="pt-4 border-t border-zinc-100 flex items-center justify-between text-xs">
-                <span className="text-zinc-500">Need help with this order?</span>
+                <span className="text-zinc-500">Need help or dosage clarification?</span>
                 <button
                   onClick={() => {
-                    setSupportMessageSent(true);
-                    setTimeout(() => setSupportMessageSent(false), 3000);
+                    if (onOpenSupportTicket) {
+                      onOpenSupportTicket(activeOrder.id);
+                    }
                   }}
-                  className="text-zinc-700 hover:text-zinc-900 font-medium flex items-center gap-1.5"
+                  className="px-3 py-1.5 rounded-lg border border-zinc-200 hover:bg-zinc-50 text-zinc-800 font-semibold flex items-center gap-1.5 transition-colors shadow-2xs"
                 >
-                  <MessageSquare className="w-3.5 h-3.5 text-zinc-400" />
-                  {supportMessageSent ? 'Support Case Opened (#CAS-991)' : 'Contact Fulfillment Support'}
+                  <MessageSquare className="w-3.5 h-3.5 text-rose-500" />
+                  Contact Fulfillment & Clinical Desk
                 </button>
               </div>
             </div>
