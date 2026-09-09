@@ -8,12 +8,16 @@ import {
   PrescriptionRecord,
   PaymentSession,
   ProductReview,
-  SubscriptionIntervalDays
+  SubscriptionIntervalDays,
+  SupportedCurrency,
+  SupportedLanguage
 } from '../types';
 import { SAMPLE_PRESCRIPTIONS } from '../data/genericMedData';
 import { ProductDetailModal } from './ProductDetailModal';
 import { PrescriptionScannerModal } from './PrescriptionScannerModal';
 import { PaymentGatewayModal } from './PaymentGatewayModal';
+import { ClinicalSafetyAlert } from './ClinicalSafetyAlert';
+import { formatCurrency, t, checkDrugInteractions } from '../utils/i18n';
 import {
   Search,
   Filter,
@@ -38,7 +42,9 @@ import {
   Eye,
   Check,
   FileText,
-  Upload
+  Upload,
+  Video,
+  Network
 } from 'lucide-react';
 
 interface CustomerMarketplaceProps {
@@ -65,6 +71,11 @@ interface CustomerMarketplaceProps {
   onOpenSubscriptions?: () => void;
   onSubscribe?: (product: CanonicalProduct, listing: ProductListing, interval: SubscriptionIntervalDays) => void;
   onSubmitReview?: (review: Omit<ProductReview, 'id' | 'date' | 'helpfulCount' | 'status'>) => void;
+  // Phase 3 props
+  currency?: SupportedCurrency;
+  language?: SupportedLanguage;
+  onOpenTeleConsult?: () => void;
+  onOpenNationalNetwork?: () => void;
 }
 
 export const CustomerMarketplace: React.FC<CustomerMarketplaceProps> = ({
@@ -85,6 +96,10 @@ export const CustomerMarketplace: React.FC<CustomerMarketplaceProps> = ({
   onOpenSubscriptions,
   onSubscribe,
   onSubmitReview,
+  currency = 'INR',
+  language = 'en',
+  onOpenTeleConsult,
+  onOpenNationalNetwork
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedDosage, setSelectedDosage] = useState<string>('all');
@@ -166,6 +181,12 @@ export const CustomerMarketplace: React.FC<CustomerMarketplaceProps> = ({
     return sum + Math.max(0, brandedCost - genericCost);
   }, 0);
 
+  // Phase 3: Autonomous Clinical DDI Safety Checker
+  const activeDdiAlerts = useMemo(
+    () => checkDrugInteractions(cart, activePrescriptions),
+    [cart, activePrescriptions]
+  );
+
   const toggleCompare = (listingId: string) => {
     if (compareListingIds.includes(listingId)) {
       setCompareListingIds(prev => prev.filter(id => id !== listingId));
@@ -243,7 +264,7 @@ export const CustomerMarketplace: React.FC<CustomerMarketplaceProps> = ({
               <span className="text-sm font-semibold">Cart ({cart.reduce((s, i) => s + i.quantity, 0)})</span>
               {cart.length > 0 && (
                 <span className="text-xs font-mono bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-md">
-                  ₹{cartSubtotal.toFixed(2)}
+                  {formatCurrency(cartSubtotal, currency)}
                 </span>
               )}
             </button>
@@ -259,7 +280,7 @@ export const CustomerMarketplace: React.FC<CustomerMarketplaceProps> = ({
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search by salt (e.g. Paracetamol, Metformin) or brand (Crocin, Dolo, Lipitor)..."
+              placeholder={t('search.placeholder', language)}
               className="w-full pl-10 pr-4 py-2.5 text-sm rounded-lg border border-zinc-200 bg-zinc-50 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-zinc-900 text-zinc-900 placeholder:text-zinc-400 transition-all"
             />
           </div>
@@ -328,6 +349,42 @@ export const CustomerMarketplace: React.FC<CustomerMarketplaceProps> = ({
           )}
         </div>
       </div>
+
+      {/* Phase 3: In-App Tele-Doctor Prescription Renewal Banner */}
+      {onOpenTeleConsult && (
+        <div className="bg-linear-to-r from-indigo-900 via-indigo-800 to-indigo-950 text-white rounded-2xl p-5 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4 border border-indigo-700/50 animate-in fade-in">
+          <div className="flex items-start gap-4">
+            <div className="w-12 h-12 rounded-xl bg-indigo-600/50 border border-indigo-400/40 flex items-center justify-center text-indigo-200 shrink-0">
+              <Video className="w-6 h-6" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-bold uppercase tracking-wider bg-indigo-500/30 text-indigo-200 px-2 py-0.5 rounded border border-indigo-400/30 font-mono">
+                  Tele-Medicine Practice Guidelines • MCI Verified
+                </span>
+                <span className="text-[10px] bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded font-bold">
+                  5-Min Renewal
+                </span>
+              </div>
+              <h3 className="font-bold text-base mt-1 text-white">
+                {t('banner.tele_title', language)}
+              </h3>
+              <p className="text-xs text-indigo-200 mt-0.5 max-w-2xl leading-relaxed">
+                {t('banner.tele_desc', language)}
+              </p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={onOpenTeleConsult}
+            className="px-5 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-zinc-950 font-bold text-xs rounded-xl flex items-center gap-2 shadow-lg transition-all shrink-0 cursor-pointer"
+          >
+            <Video className="w-4 h-4" />
+            {t('banner.tele_cta', language)}
+          </button>
+        </div>
+      )}
 
       {/* Compare Floating Bar (if items selected) */}
       {compareListingIds.length > 0 && (
@@ -423,7 +480,7 @@ export const CustomerMarketplace: React.FC<CustomerMarketplaceProps> = ({
                       <span className="text-xs text-zinc-500">Normalized Unit Price:</span>
                       <div className="text-right">
                         <span className="text-lg font-extrabold text-zinc-900 font-mono">
-                          ₹{listing.normalizedUnitPrice.toFixed(2)}
+                          {formatCurrency(listing.normalizedUnitPrice, currency)}
                         </span>
                         <span className="text-xs text-zinc-500 font-normal"> / {listing.unitLabel}</span>
                       </div>
@@ -431,11 +488,11 @@ export const CustomerMarketplace: React.FC<CustomerMarketplaceProps> = ({
 
                     <div className="flex items-center justify-between text-xs pt-1 border-t border-zinc-200/60 text-zinc-600">
                       <span>Pack Size ({listing.packQuantity} tabs):</span>
-                      <span className="font-semibold text-zinc-800 font-mono">₹{listing.packPrice.toFixed(2)}</span>
+                      <span className="font-semibold text-zinc-800 font-mono">{formatCurrency(listing.packPrice, currency)}</span>
                     </div>
                     <div className="flex items-center justify-between text-[11px] text-zinc-400">
                       <span>Branded Ref ({canonical.commonBrandEquivalent}):</span>
-                      <span className="line-through font-mono">₹{(canonical.brandPriceRef * listing.packQuantity).toFixed(2)}</span>
+                      <span className="line-through font-mono">{formatCurrency(canonical.brandPriceRef * listing.packQuantity, currency)}</span>
                     </div>
                   </div>
 
@@ -706,6 +763,7 @@ export const CustomerMarketplace: React.FC<CustomerMarketplaceProps> = ({
         cartItems={cart}
         customerName={checkoutName}
         customerEmail={checkoutEmail}
+        currency={currency}
         onPaymentSuccess={(session) => {
           const order = onPlaceOrder(
             checkoutName,
@@ -732,7 +790,7 @@ export const CustomerMarketplace: React.FC<CustomerMarketplaceProps> = ({
               <div className="flex items-center justify-between border-b border-zinc-100 pb-4">
                 <div className="flex items-center gap-2">
                   <ShoppingCart className="w-5 h-5 text-zinc-900" />
-                  <h3 className="text-lg font-bold text-zinc-900">Cart & Checkout</h3>
+                  <h3 className="text-lg font-bold text-zinc-900">{t('cart.title', language)}</h3>
                 </div>
                 <button onClick={() => setIsCheckoutOpen(false)} className="p-1 rounded-lg text-zinc-400 hover:text-zinc-700">
                   <X className="w-5 h-5" />
@@ -761,6 +819,15 @@ export const CustomerMarketplace: React.FC<CustomerMarketplaceProps> = ({
               {/* Step 1: Cart Items Review */}
               {checkoutStep === 'review' && (
                 <div className="space-y-4">
+                  {/* Phase 3: Autonomous Clinical DDI Safety Alert */}
+                  {cart.length > 0 && (
+                    <ClinicalSafetyAlert
+                      alerts={activeDdiAlerts}
+                      language={language}
+                      onOpenTeleConsult={onOpenTeleConsult}
+                    />
+                  )}
+
                   {cart.length === 0 ? (
                     <div className="text-center py-10 text-xs text-zinc-500 space-y-2">
                       <ShoppingCart className="w-8 h-8 text-zinc-300 mx-auto" />
@@ -782,7 +849,7 @@ export const CustomerMarketplace: React.FC<CustomerMarketplaceProps> = ({
                               <p className="text-[11px] text-zinc-500">{item.listing.partnerName}</p>
                             </div>
                             <span className="font-mono text-xs font-bold text-zinc-900">
-                              ₹{(item.listing.packPrice * item.quantity).toFixed(2)}
+                              {formatCurrency(item.listing.packPrice * item.quantity, currency)}
                             </span>
                           </div>
 
@@ -944,7 +1011,7 @@ export const CustomerMarketplace: React.FC<CustomerMarketplaceProps> = ({
                     </div>
                     <div className="flex justify-between">
                       <span className="text-zinc-500">Paid Amount:</span>
-                      <span className="font-mono font-bold text-zinc-900">₹{lastPlacedOrder.totalAmount.toFixed(2)}</span>
+                      <span className="font-mono font-bold text-zinc-900">{formatCurrency(lastPlacedOrder.totalAmount, currency)}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-zinc-500">Recipient:</span>
@@ -957,7 +1024,7 @@ export const CustomerMarketplace: React.FC<CustomerMarketplaceProps> = ({
                       setIsCheckoutOpen(false);
                       onNavigateToOrders();
                     }}
-                    className="w-full py-2.5 rounded-lg bg-zinc-900 text-white font-semibold text-xs shadow-xs"
+                    className="w-full py-2.5 rounded-lg bg-zinc-900 text-white font-semibold text-xs shadow-xs cursor-pointer"
                   >
                     View Real-Time Order Tracking Timeline
                   </button>
@@ -971,11 +1038,11 @@ export const CustomerMarketplace: React.FC<CustomerMarketplaceProps> = ({
                 <div className="space-y-1.5 text-xs">
                   <div className="flex justify-between text-zinc-600">
                     <span>Generic Cart Subtotal:</span>
-                    <span className="font-mono font-semibold text-zinc-900">₹{cartSubtotal.toFixed(2)}</span>
+                    <span className="font-mono font-semibold text-zinc-900">{formatCurrency(cartSubtotal, currency)}</span>
                   </div>
                   <div className="flex justify-between text-emerald-700 font-medium">
                     <span>Estimated Branded Savings:</span>
-                    <span className="font-mono font-bold">-₹{cartTotalSavings.toFixed(2)}</span>
+                    <span className="font-mono font-bold">-{formatCurrency(cartTotalSavings, currency)}</span>
                   </div>
                   <div className="flex justify-between text-zinc-500 text-[11px]">
                     <span>Standard Express Delivery:</span>
@@ -983,7 +1050,7 @@ export const CustomerMarketplace: React.FC<CustomerMarketplaceProps> = ({
                   </div>
                   <div className="flex justify-between text-sm font-bold text-zinc-900 pt-2 border-t border-zinc-100">
                     <span>Total Payable:</span>
-                    <span className="font-mono text-base">₹{cartSubtotal.toFixed(2)}</span>
+                    <span className="font-mono text-base">{formatCurrency(cartSubtotal, currency)}</span>
                   </div>
                 </div>
 
@@ -996,10 +1063,10 @@ export const CustomerMarketplace: React.FC<CustomerMarketplaceProps> = ({
                     }
                     setIsPaymentGatewayOpen(true);
                   }}
-                  className="w-full py-3 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-white font-semibold text-xs flex items-center justify-center gap-2 shadow-md transition-colors"
+                  className="w-full py-3 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-white font-semibold text-xs flex items-center justify-center gap-2 shadow-md transition-colors cursor-pointer"
                 >
                   <CreditCard className="w-4 h-4 text-emerald-400" />
-                  Proceed to Secure Payment (₹{cartSubtotal.toFixed(2)})
+                  Proceed to Secure Payment ({formatCurrency(cartSubtotal, currency)})
                 </button>
               </div>
             )}

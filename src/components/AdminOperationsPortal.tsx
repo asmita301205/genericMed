@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { AuditRecord, OperationalException, SupportTicket, ProductReview } from '../types';
+import { AuditRecord, OperationalException, SupportTicket, ProductReview, NationalErpConnector } from '../types';
 import {
   ShieldAlert,
   Sliders,
@@ -18,7 +18,11 @@ import {
   Star,
   ShieldCheck,
   Send,
-  DollarSign
+  DollarSign,
+  FileSpreadsheet,
+  Download,
+  Network,
+  Sparkles
 } from 'lucide-react';
 
 interface AdminOperationsPortalProps {
@@ -26,6 +30,8 @@ interface AdminOperationsPortalProps {
   exceptions: OperationalException[];
   tickets?: SupportTicket[];
   reviews?: ProductReview[];
+  onOpenNationalNetwork?: () => void;
+  erpConnectors?: NationalErpConnector[];
   onResolveException: (exceptionId: string, resolution: string) => void;
   onAppendAudit: (record: Omit<AuditRecord, 'id' | 'timestamp'>) => void;
   onResolveTicket?: (ticketId: string, resolutionNote: string, refundAmount?: number) => void;
@@ -37,13 +43,17 @@ export const AdminOperationsPortal: React.FC<AdminOperationsPortalProps> = ({
   exceptions,
   tickets = [],
   reviews = [],
+  onOpenNationalNetwork,
+  erpConnectors = [],
   onResolveException,
   onAppendAudit,
   onResolveTicket,
   onModerateReview,
 }) => {
-  const [activeTab, setActiveTab] = useState<'exceptions' | 'audit' | 'ranking' | 'kpis' | 'support' | 'reviews'>('exceptions');
+  const [activeTab, setActiveTab] = useState<'exceptions' | 'audit' | 'ranking' | 'kpis' | 'support' | 'reviews' | 'compliance_auditor'>('exceptions');
   const [auditSearch, setAuditSearch] = useState('');
+  const [isExportingCompliance, setIsExportingCompliance] = useState(false);
+  const [complianceExportNotice, setComplianceExportNotice] = useState<string | null>(null);
 
   // Support ticket admin state
   const [selectedTicketId, setSelectedTicketId] = useState<string>(tickets[0]?.id || '');
@@ -219,6 +229,15 @@ export const AdminOperationsPortal: React.FC<AdminOperationsPortalProps> = ({
               }`}
             >
               PRD KPIs
+            </button>
+            <button
+              onClick={() => setActiveTab('compliance_auditor')}
+              className={`px-3 py-1.5 font-semibold rounded-lg transition-colors flex items-center gap-1 ${
+                activeTab === 'compliance_auditor' ? 'bg-white text-zinc-900 shadow-xs' : 'text-zinc-600 hover:text-zinc-900'
+              }`}
+            >
+              <FileCheck className="w-3 h-3 text-emerald-600" />
+              Statutory AI Auditor (Sec 18)
             </button>
           </div>
         </div>
@@ -765,6 +784,130 @@ export const AdminOperationsPortal: React.FC<AdminOperationsPortalProps> = ({
               </div>
               <div className="w-full bg-zinc-200 h-2 rounded-full overflow-hidden">
                 <div className="bg-emerald-600 h-2 rounded-full" style={{ width: '8%' }}></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Tab: Section 18 Statutory AI Compliance Auditor & Schedule H/H1 Logs (Phase 3) */}
+      {activeTab === 'compliance_auditor' && (
+        <div className="bg-white border border-zinc-200 rounded-xl p-6 shadow-xs space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-zinc-100 pb-4">
+            <div>
+              <div className="flex items-center gap-2">
+                <FileCheck className="w-5 h-5 text-emerald-600" />
+                <h3 className="text-base font-bold text-zinc-900">Section 18 Statutory AI Compliance Auditor</h3>
+                <span className="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase">
+                  Schedule H/H1 Verified
+                </span>
+              </div>
+              <p className="text-xs text-zinc-500 mt-0.5">
+                Automated statutory audit checks under the Drugs and Cosmetics Act & National Telemedicine Practice Guidelines.
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => {
+                setIsExportingCompliance(true);
+                setTimeout(() => {
+                  setIsExportingCompliance(false);
+                  setComplianceExportNotice('Form 20/21 Statutory Regulatory Audit Pack generated and signed cryptographically (SHA256: e8b91a... ready for CDSCO inspection).');
+                  setTimeout(() => setComplianceExportNotice(null), 5000);
+                }, 1000);
+              }}
+              disabled={isExportingCompliance}
+              className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold flex items-center gap-2 shadow-xs transition-colors cursor-pointer shrink-0"
+            >
+              <Download className={`w-3.5 h-3.5 ${isExportingCompliance ? 'animate-bounce' : ''}`} />
+              {isExportingCompliance ? 'Compiling Audit Pack...' : 'Export Form 20/21 Regulatory Pack'}
+            </button>
+          </div>
+
+          {complianceExportNotice && (
+            <div className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-900 flex items-center gap-2.5 animate-in fade-in">
+              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+              <span>{complianceExportNotice}</span>
+            </div>
+          )}
+
+          {/* Statutory Verification Rates */}
+          <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+            <div className="p-4 rounded-xl bg-emerald-50/60 border border-emerald-200 space-y-1">
+              <span className="text-zinc-500 text-[11px] block">Prescription Validated Rate</span>
+              <span className="text-2xl font-bold font-mono text-emerald-900">100.0%</span>
+              <span className="text-[10px] text-emerald-700 font-semibold block">0 Dispenses Without Valid Rx</span>
+            </div>
+
+            <div className="p-4 rounded-xl bg-indigo-50/60 border border-indigo-200 space-y-1">
+              <span className="text-zinc-500 text-[11px] block">Doctor MCI Registry Match</span>
+              <span className="text-2xl font-bold font-mono text-indigo-900">100.0%</span>
+              <span className="text-[10px] text-indigo-700 font-semibold block">NMC Verified Signatures</span>
+            </div>
+
+            <div className="p-4 rounded-xl bg-amber-50/60 border border-amber-200 space-y-1">
+              <span className="text-zinc-500 text-[11px] block">Near-Expiry Quarantine</span>
+              <span className="text-2xl font-bold font-mono text-amber-950">100.0%</span>
+              <span className="text-[10px] text-amber-800 font-semibold block">Section 65 Shelf-Life Guard</span>
+            </div>
+
+            <div className="p-4 rounded-xl bg-purple-50/60 border border-purple-200 space-y-1">
+              <span className="text-zinc-500 text-[11px] block">B2B ERP Sync Heartbeat</span>
+              <span className="text-2xl font-bold font-mono text-purple-900">18 ms</span>
+              <span className="text-[10px] text-purple-700 font-semibold block">FHIR R4 / EDI 850 Online</span>
+            </div>
+          </div>
+
+          {/* Statutory Log Feed */}
+          <div className="space-y-3">
+            <h4 className="text-xs font-bold text-zinc-900 flex items-center gap-1.5">
+              <Activity className="w-4 h-4 text-emerald-600" />
+              Automated Statutory Verification Stream (Last 24 Hours)
+            </h4>
+
+            <div className="border border-zinc-200 rounded-xl overflow-hidden divide-y divide-zinc-100 text-xs">
+              <div className="p-3 bg-zinc-50 font-semibold text-zinc-700 text-[11px] flex justify-between">
+                <span>Verification Scope & Entity</span>
+                <span>Statutory Authority Standard</span>
+                <span>Audit Status</span>
+                <span>Timestamp</span>
+              </div>
+
+              <div className="p-3 bg-white flex justify-between items-center hover:bg-zinc-50/60">
+                <div>
+                  <strong className="text-zinc-900 block">Schedule H1 Form 20 Verification • ORD-2026-9044</strong>
+                  <span className="text-[11px] text-zinc-500">Dr. Priya Kulkarni (KMC-Reg-48291)</span>
+                </div>
+                <span className="font-mono text-zinc-600 text-[11px]">Drugs & Cosmetics Rules 65(9)</span>
+                <span className="text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                  PASSED
+                </span>
+                <span className="text-zinc-400 text-[11px]">Today at 10:15 AM</span>
+              </div>
+
+              <div className="p-3 bg-white flex justify-between items-center hover:bg-zinc-50/60">
+                <div>
+                  <strong className="text-zinc-900 block">Digital Rx Telemedicine Verification • Dr. Ananya Sharma</strong>
+                  <span className="text-[11px] text-zinc-500">MCI Registration REG-MCI-2012-48201 validated</span>
+                </div>
+                <span className="font-mono text-zinc-600 text-[11px]">Telemedicine Guidelines 2020</span>
+                <span className="text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                  PASSED
+                </span>
+                <span className="text-zinc-400 text-[11px]">Today at 09:40 AM</span>
+              </div>
+
+              <div className="p-3 bg-white flex justify-between items-center hover:bg-zinc-50/60">
+                <div>
+                  <strong className="text-zinc-900 block">Pharmacovigilance Batch Quarantine Check • BATCH-PCM-2026-09</strong>
+                  <span className="text-[11px] text-zinc-500">Isolated & excluded from sellable inventory</span>
+                </div>
+                <span className="font-mono text-zinc-600 text-[11px]">D&C Act Section 18(a)</span>
+                <span className="text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                  QUARANTINED
+                </span>
+                <span className="text-zinc-400 text-[11px]">Today at 08:30 AM</span>
               </div>
             </div>
           </div>

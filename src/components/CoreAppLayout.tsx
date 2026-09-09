@@ -15,7 +15,10 @@ import {
   ProductReview,
   MedicineBatchRecord,
   SupportTicket,
-  SubscriptionIntervalDays
+  SubscriptionIntervalDays,
+  SupportedCurrency,
+  SupportedLanguage,
+  NationalErpConnector
 } from '../types';
 import { CustomerMarketplace } from './CustomerMarketplace';
 import { OrdersTracker } from './OrdersTracker';
@@ -43,7 +46,11 @@ import {
   Lock,
   Sparkles,
   RotateCcw,
-  LifeBuoy
+  LifeBuoy,
+  Globe,
+  Coins,
+  Video,
+  Network
 } from 'lucide-react';
 
 interface CoreAppLayoutProps {
@@ -90,6 +97,14 @@ interface CoreAppLayoutProps {
   onModerateReview?: (reviewId: string, action: 'approved' | 'flagged' | 'hidden') => void;
   onResolveTicket?: (ticketId: string, resolutionNote: string, refundAmount?: number) => void;
   onUpdateBatchStatus?: (batchId: string, status: MedicineBatchRecord['status']) => void;
+  // Phase 3 props
+  currency?: SupportedCurrency;
+  onCurrencyChange?: (currency: SupportedCurrency) => void;
+  language?: SupportedLanguage;
+  onLanguageChange?: (language: SupportedLanguage) => void;
+  onOpenTeleConsult?: () => void;
+  onOpenNationalNetwork?: () => void;
+  erpConnectors?: NationalErpConnector[];
 }
 
 export const CoreAppLayout: React.FC<CoreAppLayoutProps> = ({
@@ -135,6 +150,13 @@ export const CoreAppLayout: React.FC<CoreAppLayoutProps> = ({
   onModerateReview,
   onResolveTicket,
   onUpdateBatchStatus,
+  currency = 'INR',
+  onCurrencyChange,
+  language = 'en',
+  onLanguageChange,
+  onOpenTeleConsult,
+  onOpenNationalNetwork,
+  erpConnectors = []
 }) => {
   const [viewportMode, setViewportMode] = useState<'desktop' | 'tablet' | 'mobile'>('desktop');
   const [roleFilter, setRoleFilter] = useState<'all' | 'customer' | 'partner' | 'admin'>('all');
@@ -213,6 +235,70 @@ export const CoreAppLayout: React.FC<CoreAppLayoutProps> = ({
               <Smartphone className="w-3.5 h-3.5" />
             </button>
           </div>
+
+          {/* Phase 3: Currency Selector */}
+          <div className="flex items-center bg-zinc-100 border border-zinc-200 rounded-lg p-0.5 text-xs shadow-2xs">
+            <Coins className="w-3.5 h-3.5 text-zinc-500 ml-1.5 mr-1 shrink-0" />
+            <select
+              id="currency-selector"
+              value={currency}
+              onChange={(e) => onCurrencyChange && onCurrencyChange(e.target.value as SupportedCurrency)}
+              className="bg-transparent text-xs font-bold text-zinc-800 pr-2 py-1 outline-none cursor-pointer"
+            >
+              <option value="INR">₹ INR</option>
+              <option value="USD">$ USD</option>
+              <option value="EUR">€ EUR</option>
+              <option value="GBP">£ GBP</option>
+              <option value="AED">د.إ AED</option>
+            </select>
+          </div>
+
+          {/* Phase 3: Language Selector */}
+          <div className="flex items-center bg-zinc-100 border border-zinc-200 rounded-lg p-0.5 text-xs shadow-2xs">
+            <Globe className="w-3.5 h-3.5 text-zinc-500 ml-1.5 mr-1 shrink-0" />
+            <select
+              id="language-selector"
+              value={language}
+              onChange={(e) => onLanguageChange && onLanguageChange(e.target.value as SupportedLanguage)}
+              className="bg-transparent text-xs font-bold text-zinc-800 pr-2 py-1 outline-none cursor-pointer"
+            >
+              <option value="en">EN English</option>
+              <option value="hi">हिन्दी Hindi</option>
+              <option value="ta">தமிழ் Tamil</option>
+              <option value="te">తెలుగు Telugu</option>
+              <option value="bn">বাংলা Bengali</option>
+            </select>
+          </div>
+
+          {/* Phase 3: Tele-Consultation Quick Button */}
+          {onOpenTeleConsult && (
+            <button
+              id="tele-consult-header-btn"
+              onClick={onOpenTeleConsult}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-indigo-200 bg-indigo-50 hover:bg-indigo-100 text-xs font-bold text-indigo-900 shadow-xs transition-colors cursor-pointer"
+            >
+              <Video className="w-3.5 h-3.5 text-indigo-600" />
+              <span className="hidden sm:inline">Tele-Doctor</span>
+              <span className="text-[10px] font-mono px-1 py-0.2 rounded bg-indigo-200/80 text-indigo-800 font-bold">
+                Rx
+              </span>
+            </button>
+          )}
+
+          {/* Phase 3: National B2B Network Quick Button */}
+          {onOpenNationalNetwork && (
+            <button
+              id="national-network-header-btn"
+              onClick={onOpenNationalNetwork}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-cyan-200 bg-cyan-50 hover:bg-cyan-100 text-xs font-bold text-cyan-900 shadow-xs transition-colors cursor-pointer"
+            >
+              <Network className="w-3.5 h-3.5 text-cyan-700" />
+              <span className="hidden sm:inline">B2B Network</span>
+              <span className="text-[10px] font-mono px-1 py-0.2 rounded bg-cyan-200/80 text-cyan-800 font-bold">
+                3 ERPs
+              </span>
+            </button>
+          )}
 
           {/* Chronic Subscriptions Quick Button (Phase 2) */}
           {onOpenSubscriptions && (
@@ -334,6 +420,10 @@ export const CoreAppLayout: React.FC<CoreAppLayoutProps> = ({
             userProfile={userProfile}
             activePrescriptions={activePrescriptions}
             reviews={reviews}
+            currency={currency}
+            language={language}
+            onOpenTeleConsult={onOpenTeleConsult}
+            onOpenNationalNetwork={onOpenNationalNetwork}
             onAddToCart={onAddToCart}
             onUpdateCartQty={onUpdateCartQty}
             onRemoveFromCart={onRemoveFromCart}
@@ -351,6 +441,7 @@ export const CoreAppLayout: React.FC<CoreAppLayoutProps> = ({
         {activeScreen.id === 'screen-orders' && (
           <OrdersTracker
             orders={orders}
+            currency={currency}
             onReorder={onReorder}
             onNavigateToDiscovery={() => onSelectScreen('screen-discovery')}
             onOpenRouteTracker={onOpenRouteTracker}
@@ -366,6 +457,9 @@ export const CoreAppLayout: React.FC<CoreAppLayoutProps> = ({
             products={products}
             orders={orders}
             batchRecords={batchRecords}
+            currency={currency}
+            onOpenNationalNetwork={onOpenNationalNetwork}
+            erpConnectors={erpConnectors}
             onUpdateListingStock={onUpdateListingStock}
             onUpdateListingPrice={onUpdateListingPrice}
             onUpdateOrderStatus={onUpdateOrderStatus}
@@ -379,6 +473,8 @@ export const CoreAppLayout: React.FC<CoreAppLayoutProps> = ({
             exceptions={exceptions}
             tickets={tickets}
             reviews={reviews}
+            onOpenNationalNetwork={onOpenNationalNetwork}
+            erpConnectors={erpConnectors}
             onResolveException={onResolveException}
             onAppendAudit={onAppendAudit}
             onResolveTicket={onResolveTicket}

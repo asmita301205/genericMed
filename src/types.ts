@@ -129,6 +129,10 @@ export interface OrderRecord {
     timestamp: string;
     completed: boolean;
   }[];
+  // Phase 3 Scale enhancements
+  splitShipments?: MultiWarehouseSplitShipment[];
+  appliedCurrency?: SupportedCurrency;
+  appliedLanguage?: SupportedLanguage;
 }
 
 export interface AuditRecord {
@@ -371,4 +375,111 @@ export interface PartnerAnalyticsSummary {
   batchWasteRate: number;
   topSellingMolecules: { name: string; units: number; revenue: number }[];
 }
+
+// Phase 3: Tele-Consultation & Digital Rx Renewal (PRD Section 10 / P1)
+export interface DoctorProfile {
+  id: string;
+  name: string;
+  title: string; // e.g. "MBBS, MD (Internal Medicine)"
+  specialty: string; // e.g. "Diabetologist & General Physician"
+  regNumber: string; // e.g. "REG-MCI-2018-84920"
+  experienceYears: number;
+  consultationFee: number; // in INR
+  rating: number;
+  reviewCount: number;
+  avatarUrl: string;
+  availableSlot: string;
+  languages: string[];
+  bio: string;
+}
+
+export interface ClinicalVitalSigns {
+  bloodPressure: string; // e.g. "128/82 mmHg"
+  bloodGlucose: string; // e.g. "114 mg/dL Fasting"
+  heartRateBpm: number;
+  temperatureFahrenheit: number;
+  knownAllergies: string[];
+  chronicDiagnoses: string[];
+}
+
+export interface TeleConsultationSession {
+  id: string;
+  patientId: string;
+  patientName: string;
+  doctor: DoctorProfile;
+  callStatus: 'waiting' | 'connected' | 'completed';
+  scheduledTime: string;
+  durationSeconds: number;
+  diagnosisNotes: string;
+  icd10Code: string;
+  prescribedSalts: {
+    saltName: string;
+    dosage: string;
+    frequency: string;
+    durationDays: number;
+    substituteGenericProduct: CanonicalProduct;
+  }[];
+  digitalRx?: PrescriptionRecord;
+  vitals: ClinicalVitalSigns;
+  doctorSignatureHash?: string;
+  createdAt: string;
+}
+
+// Phase 3: National Pharmacy Network & B2B ERP Connectors (PRD Section 14 / P2)
+export type ErpSyncStatus = 'online' | 'syncing' | 'error' | 'maintenance';
+export type ErpProtocolType = 'FHIR R4 JSON REST' | 'EDI 850/855/856' | 'National Health Stack Open API';
+
+export interface NationalErpConnector {
+  id: string;
+  chainName: 'Apollo Pharmacy National' | 'MedPlus Retail Network' | 'Jan Aushadhi PMBI Central';
+  logoBadge: string;
+  protocol: ErpProtocolType;
+  endpointUrl: string;
+  syncStatus: ErpSyncStatus;
+  lastSyncTimestamp: string;
+  pingLatencyMs: number;
+  totalMappedSkus: number;
+  discrepanciesResolved24h: number;
+  autoReconcileEnabled: boolean;
+  warehouseLocation: string;
+}
+
+// Phase 3: Multi-Warehouse Split Routing
+export interface MultiWarehouseSplitShipment {
+  shipmentId: string;
+  originType: 'Local Express Chemist' | 'National Central Warehouse';
+  originName: string;
+  items: CartItem[];
+  subtotal: number;
+  estimatedDeliveryMinutes: number;
+  courierFleetType: 'Electric Two-Wheeler' | 'Cold-Chain Temperature Controlled Van';
+  status: 'Preparing' | 'In Transit' | 'Delivered';
+  handoverPin: string;
+  tempStatus: string;
+}
+
+// Phase 3: Multi-Currency & Internationalization (i18n)
+export type SupportedCurrency = 'INR' | 'USD' | 'EUR' | 'GBP' | 'AED';
+export type SupportedLanguage = 'en' | 'hi' | 'ta' | 'te' | 'bn';
+
+export interface CurrencyConfig {
+  code: SupportedCurrency;
+  symbol: string;
+  rateAgainstINR: number;
+  name: string;
+}
+
+// Phase 3: Autonomous Clinical Drug-Drug Interaction (DDI) Safety Engine
+export type InteractionSeverity = 'safe' | 'moderate' | 'critical';
+
+export interface DrugInteractionAlert {
+  id: string;
+  severity: InteractionSeverity;
+  primaryDrug: string;
+  interactingDrug: string;
+  mechanism: string;
+  clinicalAdvisory: string;
+  requiresPharmacistOverride: boolean;
+}
+
 

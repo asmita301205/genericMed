@@ -12,7 +12,14 @@ import {
   SupportTicket,
   PharmacyGeoLocation,
   DispatchRouteEstimate,
-  PartnerAnalyticsSummary
+  PartnerAnalyticsSummary,
+  DoctorProfile,
+  NationalErpConnector,
+  MultiWarehouseSplitShipment,
+  SupportedCurrency,
+  SupportedLanguage,
+  CurrencyConfig,
+  DrugInteractionAlert
 } from '../types';
 
 export const CANONICAL_PRODUCTS: CanonicalProduct[] = [
@@ -426,6 +433,92 @@ export const PRODUCT_LISTINGS: ProductListing[] = [
 
 export const INITIAL_ORDERS: OrderRecord[] = [
   {
+    id: 'ORD-2026-9044',
+    customerName: 'Aarav Sharma',
+    customerEmail: 'aarav.sharma@example.com',
+    items: [
+      {
+        listingId: 'list-para-medplus',
+        listing: PRODUCT_LISTINGS[0],
+        canonicalProduct: CANONICAL_PRODUCTS[0],
+        quantity: 2
+      },
+      {
+        listingId: 'list-metformin-apollo',
+        listing: PRODUCT_LISTINGS[3],
+        canonicalProduct: CANONICAL_PRODUCTS[1],
+        quantity: 1
+      },
+      {
+        listingId: 'list-atorva-apollo',
+        listing: PRODUCT_LISTINGS[6],
+        canonicalProduct: CANONICAL_PRODUCTS[3],
+        quantity: 2
+      }
+    ],
+    totalAmount: 162.00,
+    status: 'Out for Delivery',
+    paymentStatus: 'Verified Paid',
+    createdAt: 'Today at 10:15 AM',
+    deliveryAddress: 'Flat 402, Greenfield Residences, Sector 14, Gurugram',
+    deliveryPin: '4892',
+    appliedCurrency: 'INR',
+    appliedLanguage: 'en',
+    trackingTimeline: [
+      { status: 'Order Created & Multi-Warehouse Routing Evaluated', timestamp: '10:15 AM', completed: true },
+      { status: 'Split-Shipment Initiated across 2 Specialized Depots', timestamp: '10:16 AM', completed: true },
+      { status: 'Shipment 1: Local Chemist Dispatched (30m ETA)', timestamp: '10:28 AM', completed: true },
+      { status: 'Shipment 2: Jan Aushadhi National Cold-Chain Dispatched', timestamp: '10:35 AM', completed: true },
+      { status: 'Delivery in Progress with Real-Time Telemetry', timestamp: '10:45 AM', completed: false }
+    ],
+    splitShipments: [
+      {
+        shipmentId: 'SPLIT-9044-A',
+        originType: 'Local Express Chemist',
+        originName: 'MedPlus Care Pharmacy (North Hub)',
+        items: [
+          {
+            listingId: 'list-para-medplus',
+            listing: PRODUCT_LISTINGS[0],
+            canonicalProduct: CANONICAL_PRODUCTS[0],
+            quantity: 2
+          }
+        ],
+        subtotal: 14.00,
+        estimatedDeliveryMinutes: 25,
+        courierFleetType: 'Electric Two-Wheeler',
+        status: 'In Transit',
+        handoverPin: '4892',
+        tempStatus: 'Optimal Ambient (21.4°C)'
+      },
+      {
+        shipmentId: 'SPLIT-9044-B',
+        originType: 'National Central Warehouse',
+        originName: 'Jan Aushadhi PMBI Central Depot (Zone 1)',
+        items: [
+          {
+            listingId: 'list-metformin-apollo',
+            listing: PRODUCT_LISTINGS[3],
+            canonicalProduct: CANONICAL_PRODUCTS[1],
+            quantity: 1
+          },
+          {
+            listingId: 'list-atorva-apollo',
+            listing: PRODUCT_LISTINGS[6],
+            canonicalProduct: CANONICAL_PRODUCTS[3],
+            quantity: 2
+          }
+        ],
+        subtotal: 148.00,
+        estimatedDeliveryMinutes: 180,
+        courierFleetType: 'Cold-Chain Temperature Controlled Van',
+        status: 'In Transit',
+        handoverPin: '7125',
+        tempStatus: 'Safe Cold-Chain (4.2°C GDP Certified)'
+      }
+    ]
+  },
+  {
     id: 'ORD-2026-8821',
     customerName: 'Aarav Sharma',
     customerEmail: 'aarav.sharma@example.com',
@@ -442,6 +535,7 @@ export const INITIAL_ORDERS: OrderRecord[] = [
     paymentStatus: 'Verified Paid',
     createdAt: 'Today at 09:15 AM',
     deliveryAddress: 'Flat 402, Greenfield Residences, Sector 14',
+    deliveryPin: '3184',
     trackingTimeline: [
       { status: 'Order Created & Constraints Validated', timestamp: '09:15 AM', completed: true },
       { status: 'Payment Reconciled & Verified', timestamp: '09:16 AM', completed: true },
@@ -1030,4 +1124,278 @@ export const SAMPLE_PARTNER_ANALYTICS: Record<string, PartnerAnalyticsSummary> =
     ]
   }
 };
+
+// Phase 3: Licensed Doctor Directory for Tele-Consultation (PRD Section 10 / P1)
+export const DOCTOR_PROFILES: DoctorProfile[] = [
+  {
+    id: 'doc-ananya-sharma',
+    name: 'Dr. Ananya Sharma',
+    title: 'MBBS, MD (General & Internal Medicine)',
+    specialty: 'Internal Medicine & Chronic Disease Management',
+    regNumber: 'REG-MCI-2012-48201',
+    experienceYears: 14,
+    consultationFee: 299,
+    rating: 4.9,
+    reviewCount: 384,
+    avatarUrl: 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&w=400&q=80',
+    availableSlot: 'Available Now (Avg wait 2 mins)',
+    languages: ['English', 'Hindi', 'Punjabi'],
+    bio: 'Senior Consultant Physician specializing in hypertension, metabolic syndrome, and rational generic pharmacology.'
+  },
+  {
+    id: 'doc-rajesh-verma',
+    name: 'Dr. Rajesh Verma',
+    title: 'MBBS, DNB (Diabetology & Endocrinology)',
+    specialty: 'Diabetology & Lipid Disorders',
+    regNumber: 'REG-MCI-2008-31940',
+    experienceYears: 18,
+    consultationFee: 349,
+    rating: 4.95,
+    reviewCount: 512,
+    avatarUrl: 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?auto=format&fit=crop&w=400&q=80',
+    availableSlot: 'Next available in 10 mins',
+    languages: ['English', 'Hindi', 'Bengali'],
+    bio: 'Leading Endocrinologist dedicated to optimizing chronic therapy through verified bio-equivalent generics.'
+  },
+  {
+    id: 'doc-meera-nambiar',
+    name: 'Dr. Meera Nambiar',
+    title: 'MBBS, DGO (Family Medicine & Primary Care)',
+    specialty: 'Primary Care & Infectious Diseases',
+    regNumber: 'REG-MCI-2015-62104',
+    experienceYears: 11,
+    consultationFee: 249,
+    rating: 4.88,
+    reviewCount: 290,
+    avatarUrl: 'https://images.unsplash.com/photo-1594824813515-555e1c455829?auto=format&fit=crop&w=400&q=80',
+    availableSlot: 'Available Now (Instant Connect)',
+    languages: ['English', 'Tamil', 'Malayalam', 'Hindi'],
+    bio: 'Family physician with deep expertise in acute antibiotic stewardship and pediatric generic formulations.'
+  }
+];
+
+// Phase 3: National Pharmacy Network B2B ERP Connectors (PRD Section 14 / P2)
+export const NATIONAL_ERP_CONNECTORS: NationalErpConnector[] = [
+  {
+    id: 'erp-apollo-national',
+    chainName: 'Apollo Pharmacy National',
+    logoBadge: '🏥 Apollo ERP Gateway',
+    protocol: 'FHIR R4 JSON REST',
+    endpointUrl: 'https://fhir.apollo-health.internal/v4/MedicationKnowledge',
+    syncStatus: 'online',
+    lastSyncTimestamp: 'Just now (10:14 AM)',
+    pingLatencyMs: 18,
+    totalMappedSkus: 12450,
+    discrepanciesResolved24h: 3,
+    autoReconcileEnabled: true,
+    warehouseLocation: 'South Zone Regional Fulfillment Depot, Bengaluru'
+  },
+  {
+    id: 'erp-medplus-retail',
+    chainName: 'MedPlus Retail Network',
+    logoBadge: '💊 MedPlus Direct B2B',
+    protocol: 'EDI 850/855/856',
+    endpointUrl: 'https://edi.medplusindia.internal/b2b/v3/inventory-feed',
+    syncStatus: 'online',
+    lastSyncTimestamp: '3 mins ago (10:11 AM)',
+    pingLatencyMs: 32,
+    totalMappedSkus: 8920,
+    discrepanciesResolved24h: 1,
+    autoReconcileEnabled: true,
+    warehouseLocation: 'North Zone High-Velocity Distribution Center, Delhi NCR'
+  },
+  {
+    id: 'erp-janaushadhi-central',
+    chainName: 'Jan Aushadhi PMBI Central',
+    logoBadge: '🇮🇳 PMBI National Central Depot',
+    protocol: 'National Health Stack Open API',
+    endpointUrl: 'https://api.janaushadhi.gov.in/nh-stack/v2/warehouse/stock',
+    syncStatus: 'online',
+    lastSyncTimestamp: '12 mins ago (10:02 AM)',
+    pingLatencyMs: 24,
+    totalMappedSkus: 18200,
+    discrepanciesResolved24h: 0,
+    autoReconcileEnabled: true,
+    warehouseLocation: 'Central Apex Strategic Warehouse, Gurugram Logistics Park'
+  }
+];
+
+// Phase 3: Clinical Drug-Drug Interaction Rules Matrix
+export const DRUG_INTERACTION_RULES: DrugInteractionAlert[] = [
+  {
+    id: 'ddi-aspirin-clopidogrel',
+    severity: 'critical',
+    primaryDrug: 'Aspirin / NSAIDs (Ibuprofen)',
+    interactingDrug: 'Clopidogrel / Blood Thinners',
+    mechanism: 'Additive antiplatelet effect significantly increases the risk of major upper gastrointestinal and systemic hemorrhage.',
+    clinicalAdvisory: 'CRITICAL: Dual antiplatelet therapy requires verified cardiologist authorization and concurrent proton-pump inhibitor gastro-protection.',
+    requiresPharmacistOverride: true
+  },
+  {
+    id: 'ddi-metformin-contrast',
+    severity: 'moderate',
+    primaryDrug: 'Metformin IP',
+    interactingDrug: 'Iodinated Radiographic Contrast / Severe Renal Stress',
+    mechanism: 'Contrast-induced nephropathy can impair renal clearance of metformin, precipitating life-threatening lactic acidosis.',
+    clinicalAdvisory: 'MODERATE: Withhold metformin 48 hours prior to and post iodinated contrast imaging until eGFR is verified stable.',
+    requiresPharmacistOverride: false
+  },
+  {
+    id: 'ddi-simvastatin-amlodipine',
+    severity: 'moderate',
+    primaryDrug: 'Atorvastatin / Simvastatin',
+    interactingDrug: 'Amlodipine Besylate',
+    mechanism: 'CYP3A4 inhibition by amlodipine can increase statin plasma concentrations, elevating the risk of myopathy and rhabdomyolysis.',
+    clinicalAdvisory: 'MODERATE: Recommended daily statin dose should not exceed 20mg when co-administered with amlodipine 5-10mg.',
+    requiresPharmacistOverride: false
+  },
+  {
+    id: 'ddi-paracetamol-alcohol',
+    severity: 'moderate',
+    primaryDrug: 'Paracetamol IP 500mg/650mg',
+    interactingDrug: 'Ethanol / Hepatotoxic Agents',
+    mechanism: 'Chronic ethanol consumption induces CYP2E1, accelerating generation of toxic NAPQI metabolite and liver glutathione depletion.',
+    clinicalAdvisory: 'MODERATE: Do not exceed 2,000mg/24h in patients with elevated ALT/AST or concurrent liver stress.',
+    requiresPharmacistOverride: false
+  }
+];
+
+// Phase 3: Currency Configurations
+export const CURRENCY_CONFIGS: Record<SupportedCurrency, CurrencyConfig> = {
+  INR: { code: 'INR', symbol: '₹', rateAgainstINR: 1.0, name: 'Indian Rupee (INR)' },
+  USD: { code: 'USD', symbol: '$', rateAgainstINR: 0.012, name: 'US Dollar (USD)' },
+  EUR: { code: 'EUR', symbol: '€', rateAgainstINR: 0.011, name: 'Euro (EUR)' },
+  GBP: { code: 'GBP', symbol: '£', rateAgainstINR: 0.0094, name: 'British Pound (GBP)' },
+  AED: { code: 'AED', symbol: 'د.إ', rateAgainstINR: 0.044, name: 'UAE Dirham (AED)' }
+};
+
+// Phase 3: Localization Dictionary (EN, HI, TA, TE, BN)
+export const LOCALIZATION_DICTIONARY: Record<SupportedLanguage, Record<string, string>> = {
+  en: {
+    'nav.discovery': 'Discovery & Comparison',
+    'nav.orders': 'Orders & Fleet Tracker',
+    'nav.partner': 'Pharmacy Partner Chemist',
+    'nav.admin': 'Admin Operations & Compliance',
+    'search.placeholder': 'Search active generic salt (e.g. Paracetamol, Metformin) or brand (Crocin, Dolo)...',
+    'search.all_categories': 'All Therapeutics',
+    'badge.exact_match': 'Exact Clinical Salt & Strength Match',
+    'badge.normalized_unit': 'Normalized Unit Price',
+    'badge.ranked_first': 'Ranked #1 for Value & SLA',
+    'button.compare': 'Compare',
+    'button.add_cart': 'Add to Cart',
+    'button.view_details': 'Clinical Monograph',
+    'button.subscribe_save': 'Subscribe & Save 5%',
+    'button.tele_consult': 'Tele-Doctor Consultation',
+    'button.b2b_network': 'National B2B Network',
+    'cart.title': 'Verified Cart Revalidation',
+    'cart.checkout': 'Proceed to Verified Checkout',
+    'banner.tele_title': 'Need a Doctor Prescription Renewal?',
+    'banner.tele_desc': 'Book an instant 5-minute video consultation with an MBBS/MD doctor. Get a verified Digital Rx and auto-add generics to your cart.',
+    'banner.tele_cta': 'Start Video Consultation',
+    'ddi.safe_title': 'Clinical Safety Verified: Zero Contraindications Found',
+    'ddi.warning_title': 'Clinical Drug-Drug Interaction Advisory',
+    'savings.tag': 'Consumer Savings'
+  },
+  hi: {
+    'nav.discovery': 'खोज एवं मूल्य तुलना',
+    'nav.orders': 'ऑर्डर एवं ट्रैकिंग',
+    'nav.partner': 'फार्मेसी पार्टनर पोर्टल',
+    'nav.admin': 'प्रशासन एवं अनुपालन',
+    'search.placeholder': 'जेनेरिक सॉल्ट (जैसे पैरासिटामोल, मेटफॉर्मिन) या ब्रांड (क्रोसिन, डोलो) खोजें...',
+    'search.all_categories': 'सभी श्रेणियां',
+    'badge.exact_match': 'सटीक क्लिनिकल साल्ट और मात्रा',
+    'badge.normalized_unit': 'प्रति गोली/इकाई मूल्य',
+    'badge.ranked_first': '#1 अनुशंसित विकल्प',
+    'button.compare': 'तुलना करें',
+    'button.add_cart': 'कार्ट में जोड़ें',
+    'button.view_details': 'क्लिनिकल विवरण',
+    'button.subscribe_save': 'सदस्यता लें और 5% बचाएं',
+    'button.tele_consult': 'डॉक्टर से वीडियो परामर्श',
+    'button.b2b_network': 'राष्ट्रीय नेटवर्क',
+    'cart.title': 'सत्यापित कार्ट जांच',
+    'cart.checkout': 'सत्यापित चेकआउट करें',
+    'banner.tele_title': 'क्या आपको नया डॉक्टर पर्चा चाहिए?',
+    'banner.tele_desc': 'एमबीबीएस डॉक्टर से तुरंत 5 मिनट में वीडियो परामर्श लें। डिजिटल पर्चा पाएं और सीधे जेनेरिक दवाएं कार्ट में जोड़ें।',
+    'banner.tele_cta': 'वीडियो परामर्श शुरू करें',
+    'ddi.safe_title': 'क्लिनिकल सुरक्षा सत्यापित: कोई दुष्प्रभाव नहीं',
+    'ddi.warning_title': 'दवा अंतःक्रिया (DDI) चेतावनी',
+    'savings.tag': 'उपभोक्ता बचत'
+  },
+  ta: {
+    'nav.discovery': 'தேடல் & விலை ஒப்பீடு',
+    'nav.orders': 'ஆர்டர்கள் & கண்காணிப்பு',
+    'nav.partner': 'மருந்தக கூட்டாளர் போர்டல்',
+    'nav.admin': 'நிர்வாகம் & இணக்கம்',
+    'search.placeholder': 'ஜெனரிக் மருந்து பெயர் அல்லது பிராண்ட் தேடுங்கள்...',
+    'search.all_categories': 'அனைத்து பிரிவுகளும்',
+    'badge.exact_match': 'துல்லியமான மருத்துவ சமநிலை',
+    'badge.normalized_unit': 'ஒரு மாத்திரைக்கான விலை',
+    'badge.ranked_first': '#1 சிறந்த பரிந்துரை',
+    'button.compare': 'ஒப்பிடுக',
+    'button.add_cart': 'கார்ட்டில் சேர்க்க',
+    'button.view_details': 'மருத்துவ விவரங்கள்',
+    'button.subscribe_save': 'சந்தா செலுத்தி 5% சேமிக்கவும்',
+    'button.tele_consult': 'மருத்துவர் ஆலோசனை',
+    'button.b2b_network': 'தேசிய நெட்வொர்க்',
+    'cart.title': 'சரிபார்க்கப்பட்ட கார்ட்',
+    'cart.checkout': 'செக்அவுட் தொடரவும்',
+    'banner.tele_title': 'மருத்துவர் சீட்டு புதுப்பிக்க வேண்டுமா?',
+    'banner.tele_desc': 'உடனடி 5 நிமிட வீடியோ ஆலோசனை மூலம் டிஜிட்டல் மருந்து சீட்டு பெற்று நேரடியாக ஆர்டர் செய்யுங்கள்.',
+    'banner.tele_cta': 'ஆலோசனை தொடங்கவும்',
+    'ddi.safe_title': 'மருத்துவ பாதுகாப்பு சரிபார்க்கப்பட்டது',
+    'ddi.warning_title': 'மருந்து தொடர்பு எச்சரிக்கை',
+    'savings.tag': 'சேமிப்பு'
+  },
+  te: {
+    'nav.discovery': 'శోధన & ధర పోలిక',
+    'nav.orders': 'ఆర్డర్లు & ట్రాకింగ్',
+    'nav.partner': 'ఫార్మసీ భాగస్వామి పోర్టల్',
+    'nav.admin': 'పరిపాలన & వర్తింపు',
+    'search.placeholder': 'జెనెరిక్ మందు పేరు లేదా బ్రాండ్ వెతకండి...',
+    'search.all_categories': 'అన్ని వర్గాలు',
+    'badge.exact_match': 'ఖచ్చితమైన క్లినికల్ సరిపోలిక',
+    'badge.normalized_unit': 'ఒక్క టాబ్లెట్ ధర',
+    'badge.ranked_first': '#1 ఉత్తమ ఎంపిక',
+    'button.compare': 'పోల్చండి',
+    'button.add_cart': 'కార్ట్‌కు జోడించండి',
+    'button.view_details': 'క్లినికల్ వివరాలు',
+    'button.subscribe_save': 'సబ్‌స్క్రైబ్ చేసి 5% ఆదా చేయండి',
+    'button.tele_consult': 'డాక్టర్ సంప్రదింపు',
+    'button.b2b_network': 'జాతీయ నెట్‌వర్క్',
+    'cart.title': 'ధృవీకరించబడిన కార్ట్',
+    'cart.checkout': 'చెక్‌అవుట్ చేయండి',
+    'banner.tele_title': 'డాక్టర్ ప్రిస్క్రిప్షన్ రెన్యూవల్ కావాలా?',
+    'banner.tele_desc': 'క్షణాల్లో 5 నిమిషాల వీడియో కాల్ ద్వారా డాక్టర్‌ను సంప్రదించి డిజిటల్ ప్రిస్క్రిప్షన్ పొందండి.',
+    'banner.tele_cta': 'వీడియో కాల్ ప్రారంభించండి',
+    'ddi.safe_title': 'క్లినికల్ భద్రత ధృవీకరించబడింది',
+    'ddi.warning_title': 'ఔషధ పరస్పర చర్య హెచ్చరిక',
+    'savings.tag': 'పొదుపు'
+  },
+  bn: {
+    'nav.discovery': 'অনুসন্ধান ও মূল্য তুলনা',
+    'nav.orders': 'অর্ডার ও ট্র্যাকিং',
+    'nav.partner': 'ফার্মেসি অংশীদার পোর্টাল',
+    'nav.admin': 'প্রশাসন ও সম্মতি',
+    'search.placeholder': 'জেনেরিক ওষুধের নাম বা ব্র্যান্ড খুঁজুন...',
+    'search.all_categories': 'সকল বিভাগ',
+    'badge.exact_match': 'সঠিক ক্লিনিকাল সমতুল্য',
+    'badge.normalized_unit': 'প্রতি ট্যাবলেটের দাম',
+    'badge.ranked_first': '#১ সেরা বিকল্প',
+    'button.compare': 'তুলনা করুন',
+    'button.add_cart': 'কার্টে যোগ করুন',
+    'button.view_details': 'ক্লিনিকাল বিবরণ',
+    'button.subscribe_save': 'সাবস্ক্রাইব করে ৫% সাশ্রয় করুন',
+    'button.tele_consult': 'ডাক্তারের ভিডিও পরামর্শ',
+    'button.b2b_network': 'জাতীয় নেটওয়ার্ক',
+    'cart.title': 'যাচাইকৃত কার্ট',
+    'cart.checkout': 'চেকআউট করুন',
+    'banner.tele_title': 'নতুন প্রেসক্রিপশন প্রয়োজন?',
+    'banner.tele_desc': 'এমবিবিএস চিকিৎসকের সাথে ৫ মিনিটের তাত্ক্ষণিক ভিডিও পরামর্শ নিন এবং ডিজিটাল প্রেসক্রিপশন পান।',
+    'banner.tele_cta': 'ভিডিও পরামর্শ শুরু করুন',
+    'ddi.safe_title': 'ক্লিনিকাল নিরাপত্তা যাচাইকৃত',
+    'ddi.warning_title': 'ওষুধের পারস্পরিক ক্রিয়া সতর্কতা',
+    'savings.tag': 'সাশ্রয়'
+  }
+};
+
 

@@ -11,7 +11,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [2.0.0-phase2] - 2026-09-09
+## [3.0.0-phase3] - 2026-09-09
+
+### Added
+- **In-App Tele-Consultation & Digital Rx Renewal Bridge (PRD Section 10 / P1)**:
+  - Added `TeleConsultationModal` component featuring live video room simulation, licensed doctor profiles (Dr. Ananya Sharma, Dr. Rajesh Verma, Dr. Meera Nambiar), patient vitals telemetry (BP, HR, SpO2, Blood Glucose), and clinical consultation chat.
+  - Implemented 1-click cryptographic SHA-256 digital prescription issuance with doctor National Medical Commission (NMC) registration and automatic checkout cart population.
+  - Added Tele-Doctor consultation promotion banner in `CustomerMarketplace` and header access button in `CoreAppLayout`.
+- **National Pharmacy Network & Multi-Warehouse Split Routing (PRD Section 14 / P2)**:
+  - Added `NationalNetworkModal` component and B2B Network tab in `PartnerPortal` tracking automated ERP connectors for Apollo Pharmacy National Hub, MedPlus Retail Network, and Jan Aushadhi Central PMBI Hub.
+  - Implemented multi-origin split-fulfillment routing (Leg A: Local Express Courier 30m; Leg B: National Cold-Chain Depot 24h GDP-certified).
+  - Enriched `OrdersTracker` with visual split-shipment cards displaying sub-shipments, tracking status, courier fleet, and delivery PINs.
+- **Multi-Currency & Regional Language Localization (i18n)**:
+  - Created `src/utils/i18n.ts` with dynamic currency conversion for INR (₹), USD ($), EUR (€), GBP (£), and AED (د.إ).
+  - Implemented regional language translation dictionary supporting English (EN), Hindi (हिन्दी), Tamil (தமிழ்), Telugu (తెలుగు), and Bengali (বাংলা).
+  - Added persistent Currency Switcher and Language Switcher dropdowns in the global header, with real-time price updates in unit labels, pack prices, and checkout totals.
+- **Clinical Drug-Drug Interaction (DDI) Safety Engine**:
+  - Added `ClinicalSafetyAlert` reactive warning component embedded in the cart drawer.
+  - Implemented real-time contraindication evaluator against active cart items and prescriptions (e.g., NSAID + Blood Thinner hemorrhage risk, Metformin + IV Contrast lactic acidosis).
+  - Severity classification: `Critical Contraindicated` (Red), `Major Caution` (Amber), and `Moderate Advisory` (Blue), with 1-click redirect to Tele-Doctor consultation.
+- **Section 18 Statutory AI Compliance Auditor**:
+  - Added Statutory AI Compliance Auditor tab in `AdminOperationsPortal` auditing Schedule H/H1 dispensing records, NMC doctor registration validity (100%), cold-chain compliance (99.4%), and 1-click Form 20/21 statutory compliance report export.
+
+### Changed
+- Integrated Phase 3 state and modals into `src/App.tsx`.
+- Updated persistent status footer to reflect Phase 3 Scale & Healthcare Ecosystem Live.
 
 ### Added
 - **Chronic Care Auto-Refills (Persona B)**:

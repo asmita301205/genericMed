@@ -67,17 +67,24 @@ This document serves as the persistent memory, architectural index, and domain k
 | **Batch Expiry Radar & Quarantine** | Section 65 Drugs Act | **Completed** | Batch-level inventory tracking with near-expiry (<180d) and critical (<90d) flags, temperature monitoring, and 1-click administrative quarantine. |
 | **Customer Dispute & Support Desk** | FR-ORDER-05 / FR-ADM-02 | **Completed** | Integrated ticketing desk supporting delayed delivery, damaged goods, or prescription inquiries with live pharmacist chat and refund authorization. |
 | **Partner Growth Analytics & SLA Matrix** | Phase 2 Growth | **Completed** | Store GMV analytics, on-time SLA dispatch compliance (98.6%), repeat chronic patient retention (78%), and top-performing molecule breakdowns. |
+| **In-App Tele-Consultation & Digital Rx** | PRD Section 10 / P1 | **Completed** | Video clinic room with board-certified physicians (MBBS/MD), vitals telemetry monitor, SHA-256 digital signature, and 1-click auto-cart populate. |
+| **National Pharmacy B2B ERP & Split Routing** | PRD Section 14 / P2 | **Completed** | B2B ERP connectors (Apollo, MedPlus, Jan Aushadhi PMBI Hub) with real-time SKU sync and multi-warehouse split-fulfillment (Local 30m + National Cold-Chain 24h). |
+| **Multi-Currency & Regional Language (i18n)** | P2 Localization | **Completed** | Dynamic currency conversion (INR ₹, USD $, EUR €, GBP £, AED د.إ) and regional language dictionary (English, हिन्दी, தமிழ், తెలుగు, বাংলা). |
+| **Clinical Drug-Drug Interaction (DDI) Engine** | Clinical Safety / P1 | **Completed** | Real-time contraindication evaluation between cart molecules and active prescriptions with severity badges (Critical, Major, Moderate) and advisory actions. |
+| **Section 18 Statutory AI Compliance Auditor** | Schedule H/H1 / P1 | **Completed** | Form 20/21 statutory compliance verification, NMC doctor registry audit, and 1-click regulatory export in Admin Portal. |
 
 ---
 
-## 4. Pending Features & Technical Backlog
+## 4. Pending Features & Technical Backlog (Phase 4: Autonomous Healthcare AI, ABHA & Government Open Network)
 
 | Feature | Priority | Target Phase | Description |
 | :--- | :--- | :--- | :--- |
-| **Live Production Gateway Credentials** | P1 | Phase 2.1 | Bind live production merchant keys for Razorpay / Stripe and webhook receiver endpoint in cloud backend. |
-| **Tele-Consultation Prescription Renewal**| P1 | Phase 3.0 | In-app video consultation with licensed doctors for chronic patient prescription renewal. |
-| **National Pharmacy Network Integration** | P2 | Phase 3.0 | Automated B2B inventory sync with national pharmacy ERP chains (Apollo, MedPlus, Jan Aushadhi central warehouse). |
-| **Multi-Currency & Internationalization** | P2 | Phase 3.0 | Multi-currency pricing (USD, EUR, GBP) and localized language packs (Hindi, Tamil, Telugu, Bengali). |
+| **ABHA / ABDM Health Locker & Consent Manager** | P1 | Phase 4.0 | 14-digit Ayushman Bharat Health Account (ABHA) linking, tokenized health records, and M1/M2/M3 consent artifact lifecycle. |
+| **AI Multilingual Voice Pharmacist ("Arogya Vani")** | P1 | Phase 4.0 | Voice-driven generic molecule search, bioequivalence audio explanations, and dosage guidance in EN, HI, TA, TE, and BN. |
+| **Dual-Pharmacist Digital Dispense Signature Station** | P1 | Phase 4.0 | Section 65 two-pharmacist QC & dispense verification with State Pharmacy Council license validation and 2D DataMatrix barcode generation. |
+| **PvPI Adverse Drug Reaction (ADR) Reporting** | P2 | Phase 4.0 | Pharmacovigilance Programme of India (PvPI) automated ADR yellow-form filing for suspected adverse reactions and batch anomalies. |
+| **Rural Jan Aushadhi Kendra Kiosk Mode** | P2 | Phase 4.0 | Offline-first, low-bandwidth POS interface for PMBJP Kendra operators with offline queueing and delta sync upon reconnection. |
+| **Live Production Payment Provider Keys** | P3 | Phase 4.1 | Production merchant credential binding for Razorpay/Stripe with webhook verification. |
 
 ---
 
@@ -295,12 +302,19 @@ gantt
     dateFormat  YYYY-MM
     section Phase 1 (MVP)
     Normalized Comparison & Multi-Role SPA    :done, p1, 2026-08, 2026-09
-    Prescription OCR & Gateway Integration   :active, p2, 2026-09, 2026-10
-    Pilot Launch in Tier-1 Metro Hub         :p3, 2026-10, 2026-11
-    section Phase 2 (Growth)
-    Chronic Auto-Refill Subscriptions        :p4, 2026-11, 2026-12
-    Geospatial Dynamic Dispatch & Routing    :p5, 2026-12, 2027-01
-    section Phase 3 (Scale)
-    Tele-Consultation Prescription Renewal   :p6, 2027-01, 2027-03
-    National Pharmacy Network Integration    :p7, 2027-03, 2027-06
+    Prescription OCR & Gateway Integration   :done, p2, 2026-09, 2026-09
+    section Phase 2 (Growth & Trust)
+    Chronic Auto-Refill Subscriptions        :done, p3, 2026-09, 2026-09
+    Cold-Chain Telemetry & Geospatial Routes :done, p4, 2026-09, 2026-09
+    Batch Expiry Radar & Quarantine          :done, p5, 2026-09, 2026-09
+    section Phase 3 (Scale & Ecosystem)
+    In-App Tele-Consultation & Digital Rx    :done, p6, 2026-09, 2026-09
+    National B2B ERP & Multi-Warehouse Routing:done, p7, 2026-09, 2026-09
+    Multi-Currency & Regional Language i18n  :done, p8, 2026-09, 2026-09
+    Clinical DDI Safety Engine               :done, p9, 2026-09, 2026-09
+    section Phase 4 (Autonomous Healthcare AI & ABHA)
+    ABHA / ABDM Health Locker & Consent Mgr  :active, p10, 2026-09, 2026-10
+    AI Multilingual Voice Pharmacist (Vani)  :active, p11, 2026-09, 2026-10
+    Dual-Pharmacist Digital Sign Station     :p12, 2026-10, 2026-11
+    Rural Jan Aushadhi Kiosk Mode            :p13, 2026-10, 2026-11
 ```

@@ -18,7 +18,10 @@ import {
   ProductReview,
   MedicineBatchRecord,
   SupportTicket,
-  SubscriptionIntervalDays
+  SubscriptionIntervalDays,
+  SupportedCurrency,
+  SupportedLanguage,
+  NationalErpConnector
 } from './types';
 import { CoreAppLayout } from './components/CoreAppLayout';
 import { ArchitectureDiagram } from './components/ArchitectureDiagram';
@@ -29,6 +32,8 @@ import { NotificationToastContainer } from './components/NotificationToastContai
 import { SubscriptionManagerModal } from './components/SubscriptionManagerModal';
 import { LiveRouteTrackerModal } from './components/LiveRouteTrackerModal';
 import { SupportTicketModal } from './components/SupportTicketModal';
+import { TeleConsultationModal } from './components/TeleConsultationModal';
+import { NationalNetworkModal } from './components/NationalNetworkModal';
 import {
   CANONICAL_PRODUCTS,
   PRODUCT_LISTINGS,
@@ -41,7 +46,8 @@ import {
   SAMPLE_REVIEWS,
   SAMPLE_BATCH_RECORDS,
   SAMPLE_SUPPORT_TICKETS,
-  PARTNER_GEOLOCATIONS
+  PARTNER_GEOLOCATIONS,
+  NATIONAL_ERP_CONNECTORS
 } from './data/genericMedData';
 import {
   LayoutDashboard,
@@ -187,6 +193,13 @@ export function App() {
   const [selectedRouteOrder, setSelectedRouteOrder] = useState<OrderRecord | null>(null);
   const [isSupportModalOpen, setIsSupportModalOpen] = useState(false);
   const [supportInitialOrderId, setSupportInitialOrderId] = useState<string>('');
+
+  // Phase 3 State: Localization, Tele-Consultation & B2B ERP Network
+  const [activeCurrency, setActiveCurrency] = useState<SupportedCurrency>('INR');
+  const [activeLanguage, setActiveLanguage] = useState<SupportedLanguage>('en');
+  const [isTeleConsultationOpen, setIsTeleConsultationOpen] = useState(false);
+  const [isNationalNetworkOpen, setIsNationalNetworkOpen] = useState(false);
+  const [erpConnectors, setErpConnectors] = useState<NationalErpConnector[]>(NATIONAL_ERP_CONNECTORS);
 
   // Cart operations
   const handleAddToCart = (listing: ProductListing, canonicalProduct: CanonicalProduct) => {
@@ -730,6 +743,77 @@ export function App() {
     });
   };
 
+  // Phase 3: Tele-Consultation Digital Rx Issuance & Auto-Cart Bridging
+  const handleIssuePrescriptionFromTeleConsult = (
+    rx: PrescriptionRecord,
+    prescribedProducts: { product: CanonicalProduct; listing: ProductListing }[]
+  ) => {
+    setPrescriptions(prev => [rx, ...prev]);
+    setUserProfile(prev => ({
+      ...prev,
+      activePrescriptionIds: [rx.id, ...prev.activePrescriptionIds]
+    }));
+
+    // Auto-populate cart with prescribed generic items
+    prescribedProducts.forEach(({ product, listing }) => {
+      handleAddToCart(listing, product);
+    });
+
+    handleAppendAudit({
+      actorId: rx.doctorRegNumber,
+      actorRole: 'System Worker',
+      actionType: 'PRESCRIPTION_TELECONSULT_ISSUED',
+      entityType: 'PrescriptionRecord',
+      entityId: rx.id,
+      newState: 'VERIFIED_ACTIVE',
+      reason: `Tele-consultation with Dr. ${rx.doctorName} completed. Digital Rx generated with SHA-256 signature and auto-cart population.`,
+      correlationId: `corr-tele-${Date.now().toString().slice(-6)}`,
+      sourceContext: 'Tele-Consultation Video Clinic'
+    });
+
+    setNotifications(prev => [
+      {
+        id: `notif-tele-${Date.now()}`,
+        type: 'in_app',
+        recipient: userProfile.name,
+        title: 'Digital Prescription Issued & Added to Cart',
+        body: `Dr. ${rx.doctorName} (${rx.doctorRegNumber}) issued your renewed digital prescription for ${rx.prescribedSalts.join(', ')}. Generic items added to cart.`,
+        timestamp: 'Just now',
+        status: 'delivered'
+      },
+      ...prev
+    ]);
+  };
+
+  // Phase 3: B2B ERP Network Sync Trigger
+  const handleTriggerErpSync = (connectorId: string) => {
+    setErpConnectors(prev =>
+      prev.map(c => {
+        if (c.id === connectorId) {
+          return {
+            ...c,
+            lastSyncTimestamp: 'Just now',
+            activeSyncStatus: 'synced',
+            syncedSkuCount: c.syncedSkuCount + Math.floor(Math.random() * 10) + 1
+          };
+        }
+        return c;
+      })
+    );
+
+    handleAppendAudit({
+      actorId: userProfile.id,
+      actorRole: 'Partner Staff',
+      actionType: 'ERP_DELTA_CATALOG_SYNC',
+      entityType: 'NationalErpConnector',
+      entityId: connectorId,
+      newState: 'synced',
+      reason: `Automated delta catalog synchronization executed with SLA compliance.`,
+      correlationId: `corr-erp-${Date.now().toString().slice(-6)}`,
+      sourceContext: 'National Pharmacy Network Gateway'
+    });
+  };
+
   // Hotlink Management
   const handleAddHotlink = (asset: HotlinkAsset) => {
     setHotlinks(prev => [asset, ...prev]);
@@ -881,6 +965,14 @@ export function App() {
             onModerateReview={handleModerateReview}
             onResolveTicket={handleResolveSupportTicket}
             onUpdateBatchStatus={handleUpdateBatchStatus}
+            // Phase 3 props
+            currency={activeCurrency}
+            onCurrencyChange={setActiveCurrency}
+            language={activeLanguage}
+            onLanguageChange={setActiveLanguage}
+            onOpenTeleConsult={() => setIsTeleConsultationOpen(true)}
+            onOpenNationalNetwork={() => setIsNationalNetworkOpen(true)}
+            erpConnectors={erpConnectors}
           />
         )}
 
@@ -952,6 +1044,24 @@ export function App() {
         initialOrderId={supportInitialOrderId}
       />
 
+      {/* Phase 3: Tele-Consultation & Digital Rx Renewal Modal */}
+      <TeleConsultationModal
+        isOpen={isTeleConsultationOpen}
+        onClose={() => setIsTeleConsultationOpen(false)}
+        currency={activeCurrency}
+        onIssuePrescription={handleIssuePrescriptionFromTeleConsult}
+        patientName={userProfile.name}
+      />
+
+      {/* Phase 3: National Pharmacy Network & ERP Multi-Warehouse Routing Modal */}
+      <NationalNetworkModal
+        isOpen={isNationalNetworkOpen}
+        onClose={() => setIsNationalNetworkOpen(false)}
+        connectors={erpConnectors}
+        onTriggerSync={handleTriggerErpSync}
+        recentOrders={orders}
+      />
+
       {/* Simulated Transactional Notifications Container (PRD FR-NOTIF-01) */}
       <NotificationToastContainer
         notifications={notifications}
@@ -966,8 +1076,8 @@ export function App() {
       <footer id="main-footer" className="bg-white border-t border-zinc-200 mt-auto py-4 text-xs text-zinc-500">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-3">
           <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-            <span className="font-medium text-zinc-700">genericMed Marketplace — Phase 2 Trust & Growth Live</span>
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+            <span className="font-medium text-zinc-700">genericMed Marketplace — Phase 3 Scale & Healthcare Ecosystem Live</span>
             <span>•</span>
             <span className="font-mono">PRD v0.1 Specification (8 Sep 2026)</span>
           </div>

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { PaymentSession, PaymentMethodType, CartItem } from '../types';
+import { PaymentSession, PaymentMethodType, CartItem, SupportedCurrency } from '../types';
+import { formatCurrency } from '../utils/i18n';
 import {
   X,
   CreditCard,
@@ -23,6 +24,7 @@ interface PaymentGatewayModalProps {
   cartItems: CartItem[];
   customerName: string;
   customerEmail: string;
+  currency?: SupportedCurrency;
   onPaymentSuccess: (session: PaymentSession) => void;
   onPaymentFailure: (errorMsg: string, session: PaymentSession) => void;
 }
@@ -34,6 +36,7 @@ export const PaymentGatewayModal: React.FC<PaymentGatewayModalProps> = ({
   cartItems,
   customerName,
   customerEmail,
+  currency = 'INR',
   onPaymentSuccess,
   onPaymentFailure,
 }) => {
@@ -127,7 +130,7 @@ export const PaymentGatewayModal: React.FC<PaymentGatewayModalProps> = ({
         <div className="p-4 bg-emerald-50/60 border-b border-emerald-100 flex items-center justify-between">
           <div>
             <span className="text-xs text-emerald-800 font-medium block">Total Payable for Medicines</span>
-            <span className="text-xl font-bold font-mono text-zinc-900">₹{amount.toFixed(2)}</span>
+            <span className="text-xl font-bold font-mono text-zinc-900">{formatCurrency(amount, currency)}</span>
           </div>
           <div className="text-right">
             <span className="text-[11px] text-zinc-500 block">Items in Basket</span>

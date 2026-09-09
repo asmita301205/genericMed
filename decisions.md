@@ -16,6 +16,14 @@ This document records every critical architectural, technical, and product decis
 | [ADR-006](#adr-006-north-star-metric-completed-qualified-medicine-orders-cqmo) | North Star Metric: Completed Qualified Medicine Orders (CQMO) | 2026-09-08 | **Approved** | Product Governance |
 | [ADR-007](#adr-007-immutable-section-18-audit-log-with-correlation-ids) | Immutable Section 18 Audit Log with Correlation IDs | 2026-09-08 | **Approved** | Compliance / Audit |
 | [ADR-008](#adr-008-in-memory-state-first-with-typed-domain-contracts) | In-Memory State-First with Typed Domain Contracts | 2026-09-08 | **Approved** | Engineering / Prototype |
+| [ADR-009](#adr-009-chronic-subscription-auto-refill-scheduling--predictive-pre-authorization) | Chronic Subscription Auto-Refill Scheduling | 2026-09-09 | **Approved** | Growth / Retention |
+| [ADR-010](#adr-010-patient-review-integrity--regulatory-medical-claim-moderation) | Patient Review Integrity & Claim Moderation | 2026-09-09 | **Approved** | Trust / Compliance |
+| [ADR-011](#adr-011-geospatial-store-allocation--cold-chain-telemetry-dispatch) | Geospatial Store Allocation & Cold-Chain Telemetry | 2026-09-09 | **Approved** | Logistics / Telemetry |
+| [ADR-012](#adr-012-batch-level-expiry-traceability--pharmacovigilance-quarantine) | Batch-Level Expiry Traceability & Quarantine | 2026-09-09 | **Approved** | Pharmacovigilance / Ops |
+| [ADR-013](#adr-013-tele-consultation-vitals-telemetry--digital-rx-renewal-bridge) | Tele-Consultation & Digital Rx Renewal Bridge | 2026-09-09 | **Approved** | Healthcare / Telemedicine |
+| [ADR-014](#adr-014-national-b2b-erp-network--multi-warehouse-split-fulfillment) | National B2B ERP & Split-Fulfillment | 2026-09-09 | **Approved** | B2B Network / Logistics |
+| [ADR-015](#adr-015-multi-currency--regional-language-localization-i18n) | Multi-Currency & Regional Language Localization | 2026-09-09 | **Approved** | Localization / FinTech |
+| [ADR-016](#adr-016-clinical-drug-drug-interaction-ddi-safety-engine) | Clinical Drug-Drug Interaction (DDI) Safety | 2026-09-09 | **Approved** | Clinical Safety / AI |
 
 ---
 
@@ -411,4 +419,132 @@ Implement an automated **Partner Batch Expiry Radar & Quarantine System**:
 - Added `MedicineBatchRecord` in `src/types.ts` and `SAMPLE_BATCH_RECORDS` in `src/data/genericMedData.ts`.
 - Built "Batch Expiry & Cold Chain Radar" tab in `PartnerPortal.tsx`.
 - Integrated quarantine state change commits directly to the Section 18 Audit Log.
+
+---
+
+## ADR-013: Tele-Consultation, Vitals Telemetry & Digital Rx Renewal Bridge
+
+- **Date**: 2026-09-09
+- **Status**: Approved
+- **Deciders**: Chief Medical Officer, Telemedicine Compliance Officer, Platform Architect
+
+### Context / Problem
+Under Section 10 and Schedule H/H1 rules, dispensing prescription-only generic medicines requires a valid, unexpired prescription. Chronic patients with stable conditions frequently experience prescription expiration (typically after 90–180 days), leading to order rejection at checkout and dangerous treatment discontinuation.
+
+### Decision Taken
+Deploy an **In-App Tele-Consultation Clinic & Cryptographic Digital Rx Renewal Bridge**:
+- Video consultation room with board-certified physicians (MBBS/MD) verifying patient clinical identity and vitals telemetry (Blood Pressure, Heart Rate, SpO2, Fasting Blood Glucose).
+- Doctors issue digital prescriptions with cryptographic SHA-256 signatures, National Medical Commission (NMC) registration numbers, and clinical rationale.
+- 1-Click "Issue & Auto-Populate Cart" bridge: Approved generic items are instantly placed into the patient's checkout cart with active prescription validation.
+- All consultation events and Rx renewals are recorded in the immutable Section 18 Audit Log with correlation IDs.
+
+### Reasoning
+- Eliminates checkout friction for chronic maintenance patients whose prescriptions have lapsed.
+- Maintains 100% adherence to NMC Telemedicine Practice Guidelines and statutory Schedule H rules.
+- Prevents customer drop-off by converting an order block into an immediate clinical resolution.
+
+### Alternatives Considered
+- **Unverified Self-Attestation**: Patient checks a box claiming they have a valid prescription. Strictly illegal under Indian Drugs & Cosmetics Act.
+- **External Third-Party Video Redirect**: Breaks checkout state, introduces high drop-off (>45%), and prevents automatic cart bridging.
+
+### Impact on Project
+- Added `DoctorProfile`, `ClinicalVitalSigns`, and `TeleConsultationSession` types.
+- Created `TeleConsultationModal.tsx` and integrated tele-doctor consultation triggers in `CustomerMarketplace.tsx` and `CoreAppLayout.tsx`.
+- Prescription record created directly attaches to the user's active prescriptions.
+
+---
+
+## ADR-014: National B2B ERP Network & Multi-Warehouse Split-Fulfillment
+
+- **Date**: 2026-09-09
+- **Status**: Approved
+- **Deciders**: Chief Supply Chain Officer, Head of Engineering, B2B Operations Lead
+
+### Context / Problem
+Relying on standalone local retail chemist stores introduces supply fragmentation: no single local store carries the entire catalog of generic equivalents, particularly high-cost chronic biologics, rare cardiovascular formulations, or cold-chain injectables. Rejecting orders due to partial stock reduces marketplace conversion.
+
+### Decision Taken
+Implement a **National Pharmacy B2B ERP Connector & Multi-Warehouse Split Routing Engine**:
+- Standardized B2B ERP adapters connecting genericMed with national chains (Apollo Pharmacy Central, MedPlus Retail Network, Jan Aushadhi Central PMBI Hub).
+- Multi-Warehouse Split Fulfillment: If an order contains items available locally and items only available at national depots, the order is split into specialized sub-shipments:
+  - Leg A: Local Express Courier (30–45m delivery for acute medications).
+  - Leg B: National Cold-Chain / Bulk Depot (24–48h GDP-certified temperature-controlled delivery for specialized generics).
+- Partner Portal includes an ERP Delta Sync Console displaying API health, active latency, and SKU catalog synchronization.
+
+### Reasoning
+- Maximizes order completion rate and inventory fill rate (>98%) without holding inventory.
+- Guarantees cold-chain compliance for temperature-sensitive drugs through specialized logistics channels.
+- Provides customers with real-time multi-origin tracking rather than cancellation.
+
+### Alternatives Considered
+- **All-or-Nothing Order Cancellation**: Canceling orders if a single item is unavailable at the local store. Severely impacts CQMO and customer satisfaction.
+- **Delayed Consolidated Fulfillment**: Holding local items until national depot items arrive. Unacceptable for acute symptom relief.
+
+### Impact on Project
+- Added `NationalErpConnector` and `MultiWarehouseSplitShipment` models.
+- Created `NationalNetworkModal.tsx` and integrated B2B Network tab in `PartnerPortal.tsx`.
+- Enriched `OrdersTracker.tsx` to visualize multi-warehouse split tracking timelines.
+
+---
+
+## ADR-015: Multi-Currency & Regional Language Localization (i18n)
+
+- **Date**: 2026-09-09
+- **Status**: Approved
+- **Deciders**: VP of Product, Head of Design, Internationalization Lead
+
+### Context / Problem
+India's diverse demographic spans 22 scheduled languages, with over 60% of non-metro populations preferring regional scripts (Hindi, Tamil, Telugu, Bengali). Furthermore, Non-Resident Indians (NRIs) managing healthcare for parents in India require transparent billing in foreign currencies (USD, EUR, GBP, AED) alongside domestic INR.
+
+### Decision Taken
+Deploy an integrated **Multi-Currency & Regional Language Localization Architecture**:
+- Real-time currency conversion engine supporting INR (₹), USD ($), EUR (€), GBP (£), and AED (د.إ) with live exchange rates, formatted unit pricing, and dual-currency checkout receipts.
+- Regional language dictionary supporting English (EN), Hindi (हिन्दी), Tamil (தமிழ்), Telugu (తెలుగు), and Bengali (বাংলা).
+- Currency and Language Switchers accessible from the global navigation header with persistent selection across marketplace search, comparison matrices, order tracking, and partner portals.
+
+### Reasoning
+- Democratizes access to affordable generic medicines for non-English speaking families across Tier-2 and Tier-3 geographies.
+- Unlocks the high-LTV NRI remittance segment purchasing chronic maintenance medications for elderly parents in India.
+
+### Alternatives Considered
+- **Browser Translation Only**: Inaccurate translation of pharmaceutical chemical nomenclature (generic salts) leads to clinical confusion.
+- **Separate Regional Web Properties**: Massive operational overhead and fragmented catalog maintenance.
+
+### Impact on Project
+- Created `src/utils/i18n.ts` with `formatCurrency()`, `t()`, and dictionary mappings.
+- Added `CURRENCY_CONFIGS` and `LOCALIZATION_DICTIONARY` in `src/data/genericMedData.ts`.
+- Integrated language and currency selectors across `CoreAppLayout.tsx`, `CustomerMarketplace.tsx`, `OrdersTracker.tsx`, and `PaymentGatewayModal.tsx`.
+
+---
+
+## ADR-016: Clinical Drug-Drug Interaction (DDI) Safety Engine
+
+- **Date**: 2026-09-09
+- **Status**: Approved
+- **Deciders**: Clinical Safety Board, Chief Pharmacist, Product Safety Lead
+
+### Context / Problem
+Patients frequently order multiple medicines concurrently across disparate categories (e.g., blood pressure medication, pain relief, and antacids). Without automated clinical cross-checking, dangerous contraindications (e.g., NSAID + Blood Thinner increasing gastrointestinal hemorrhage risk, or Metformin + IV Contrast causing lactic acidosis) could be dispensed without warning.
+
+### Decision Taken
+Implement a real-time **Clinical Drug-Drug Interaction (DDI) & Allergy Safety Engine**:
+- Evaluates cart molecules and user's active prescriptions against a curated clinical contraindication matrix before checkout.
+- Categorizes interactions by severity: `Critical Contraindicated` (Red alert), `Major Caution` (Amber alert), and `Moderate Advisory` (Blue alert).
+- Explains the biological mechanism (e.g., pharmacodynamic synergy, CYP450 enzyme inhibition) and provides clinical recommendations.
+- Offers 1-click redirect to in-app Tele-Consultation with a licensed physician for prescription adjustment.
+
+### Reasoning
+- Elevates patient safety from commercial convenience to clinical-grade duty of care.
+- Differentiates genericMed from unregulated grey-market e-pharmacies.
+- Prevents preventable adverse drug events (ADEs) and hospitalizations.
+
+### Alternatives Considered
+- **Post-Checkout Pharmacist Review Only**: Leaves patient unaware until order is potentially delayed or rejected hours later.
+- **Hard Checkout Block on All Interactions**: Frustrates patients on deliberate co-prescriptions managed by their specialists. DDI advisory allows informed tele-consultation without arbitrary blocking.
+
+### Impact on Project
+- Added `DrugInteractionAlert` interface and `DRUG_INTERACTION_RULES` dataset.
+- Implemented `checkDrugInteractions()` in `src/utils/i18n.ts`.
+- Created `ClinicalSafetyAlert.tsx` reactive component embedded directly in `CustomerMarketplace.tsx` cart drawer.
+
 

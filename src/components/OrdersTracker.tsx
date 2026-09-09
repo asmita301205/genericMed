@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { OrderRecord } from '../types';
+import { OrderRecord, SupportedCurrency } from '../types';
+import { formatCurrency } from '../utils/i18n';
 import {
   Clock,
   Package,
@@ -14,11 +15,15 @@ import {
   Navigation,
   Star,
   Radio,
-  Sparkles
+  Sparkles,
+  Layers,
+  Thermometer,
+  Lock
 } from 'lucide-react';
 
 interface OrdersTrackerProps {
   orders: OrderRecord[];
+  currency?: SupportedCurrency;
   onReorder: (order: OrderRecord) => void;
   onNavigateToDiscovery: () => void;
   onOpenRouteTracker?: (order: OrderRecord) => void;
@@ -29,6 +34,7 @@ interface OrdersTrackerProps {
 
 export const OrdersTracker: React.FC<OrdersTrackerProps> = ({
   orders,
+  currency = 'INR',
   onReorder,
   onNavigateToDiscovery,
   onOpenRouteTracker,
@@ -159,7 +165,7 @@ export const OrdersTracker: React.FC<OrdersTrackerProps> = ({
                     </div>
 
                     <span className="text-sm font-mono font-bold text-zinc-900">
-                      ₹{order.totalAmount.toFixed(2)}
+                      {formatCurrency(order.totalAmount, currency)}
                     </span>
                   </div>
 
@@ -197,7 +203,7 @@ export const OrdersTracker: React.FC<OrdersTrackerProps> = ({
                     <button
                       id={`live-route-btn-${activeOrder.id}`}
                       onClick={() => onOpenRouteTracker(activeOrder)}
-                      className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold transition-colors shadow-xs"
+                      className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold transition-colors shadow-xs cursor-pointer"
                     >
                       <Navigation className="w-3.5 h-3.5" />
                       Live Route & Cold-Chain
@@ -207,7 +213,7 @@ export const OrdersTracker: React.FC<OrdersTrackerProps> = ({
                   <button
                     id={`reorder-btn-${activeOrder.id}`}
                     onClick={() => onReorder(activeOrder)}
-                    className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-white text-xs font-semibold transition-colors shadow-xs"
+                    className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-white text-xs font-semibold transition-colors shadow-xs cursor-pointer"
                   >
                     <RotateCcw className="w-3.5 h-3.5" />
                     Reorder
@@ -222,7 +228,7 @@ export const OrdersTracker: React.FC<OrdersTrackerProps> = ({
                   {activeOrder.status === 'Completed' && onOpenProductReviews && (
                     <button
                       onClick={() => onOpenProductReviews(activeOrder.items[0]?.canonicalProduct.id)}
-                      className="text-xs text-amber-700 hover:text-amber-800 font-semibold flex items-center gap-1"
+                      className="text-xs text-amber-700 hover:text-amber-800 font-semibold flex items-center gap-1 cursor-pointer"
                     >
                       <Star className="w-3 h-3 fill-amber-500 text-amber-500" />
                       Write Verified Review
@@ -239,7 +245,7 @@ export const OrdersTracker: React.FC<OrdersTrackerProps> = ({
                         </div>
                       </div>
                       <span className="font-mono font-bold text-zinc-900">
-                        ₹{(item.listing.packPrice * item.quantity).toFixed(2)}
+                        {formatCurrency(item.listing.packPrice * item.quantity, currency)}
                       </span>
                     </div>
                   ))}
@@ -259,6 +265,63 @@ export const OrdersTracker: React.FC<OrdersTrackerProps> = ({
                   </div>
                 )}
               </div>
+
+              {/* Phase 3: Multi-Warehouse Split-Fulfillment Shipments Breakdown */}
+              {activeOrder.splitShipments && activeOrder.splitShipments.length > 0 && (
+                <div className="space-y-3 p-4 rounded-xl bg-indigo-50/50 border border-indigo-200">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Layers className="w-4 h-4 text-indigo-600" />
+                      <span className="text-xs font-bold text-indigo-950">
+                        Multi-Warehouse Split-Fulfillment Active ({activeOrder.splitShipments.length} Shipments)
+                      </span>
+                    </div>
+                    <span className="text-[10px] bg-indigo-200/80 text-indigo-900 font-mono font-semibold px-2 py-0.5 rounded">
+                      Smart Origin Routing
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                    {activeOrder.splitShipments.map((shipment) => (
+                      <div
+                        key={shipment.shipmentId}
+                        className="bg-white p-3 rounded-lg border border-indigo-100 shadow-2xs space-y-2 text-xs"
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="font-bold text-zinc-900 text-[11px] flex items-center gap-1">
+                            <Truck className="w-3.5 h-3.5 text-indigo-600" />
+                            {shipment.originType}
+                          </span>
+                          <span className="text-[10px] font-semibold bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded">
+                            {shipment.status}
+                          </span>
+                        </div>
+
+                        <p className="text-[11px] text-zinc-600 font-medium">{shipment.originName}</p>
+
+                        <div className="space-y-1 py-1 border-y border-zinc-100 text-[11px]">
+                          {shipment.items.map(it => (
+                            <div key={it.listingId} className="flex justify-between text-zinc-700">
+                              <span>• {it.canonicalProduct.canonicalName}</span>
+                              <span className="font-mono">x{it.quantity}</span>
+                            </div>
+                          ))}
+                        </div>
+
+                        <div className="flex items-center justify-between text-[11px] text-zinc-500 pt-0.5">
+                          <span className="flex items-center gap-1">
+                            <Thermometer className="w-3 h-3 text-cyan-600" />
+                            {shipment.tempStatus}
+                          </span>
+                          <span className="font-mono font-bold text-zinc-900">
+                            OTP: {shipment.handoverPin}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* Real-Time Timeline Milestones */}
               <div className="space-y-3">
