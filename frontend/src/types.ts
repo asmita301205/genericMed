@@ -1,0 +1,620 @@
+export type ActiveTab = 'app' | 'architecture' | 'prd' | 'photos';
+export type AppUserRole = 'customer' | 'partner' | 'admin';
+
+export interface PrdSection {
+  id: string;
+  number: string;
+  title: string;
+  summary: string;
+  content: {
+    subtitle?: string;
+    paragraphs?: string[];
+    bullets?: string[];
+    table?: {
+      headers: string[];
+      rows: string[][];
+    };
+  }[];
+}
+
+export interface ArchitectureNode {
+  id: string;
+  layer: 'client' | 'gateway' | 'services' | 'storage' | 'external';
+  title: string;
+  subtitle: string;
+  description: string;
+  tech: string[];
+  responsibilities: string[];
+  protocol: string;
+}
+
+export interface ArchitectureConnection {
+  from: string;
+  to: string;
+  label: string;
+  type: 'sync' | 'async' | 'asset';
+}
+
+export interface AppScreen {
+  id: string;
+  name: string;
+  role: AppUserRole;
+  category: 'discovery' | 'checkout' | 'orders' | 'partner' | 'admin';
+  description: string;
+  badge: string;
+  imageUrl?: string;
+  fallbackIcon: string;
+  features: string[];
+  status: 'Ready' | 'In Review' | 'Draft';
+}
+
+export interface HotlinkAsset {
+  id: string;
+  url: string;
+  title: string;
+  screenTarget: string;
+  timestamp: string;
+  status: 'active' | 'error' | 'loading';
+  dimensions?: string;
+}
+
+// genericMed Domain Models based on PRD Section 14
+export interface CanonicalProduct {
+  id: string;
+  canonicalName: string;
+  genericSalt: string;
+  therapeuticClass: string;
+  strength: string;
+  dosageForm: string;
+  prescriptionRequired: boolean;
+  commonBrandEquivalent: string;
+  brandPriceRef: number; // e.g. branded MRP for savings calculation
+  description: string;
+  // Phase 1 Clinical Extensions (FR-DISC-01 to 05)
+  manufacturer?: string;
+  drugSchedule?: string; // e.g. "Schedule H (Prescription Only)" or "OTC"
+  storageGuidelines?: string;
+  precautions?: string[];
+  sideEffects?: string[];
+  contraindications?: string[];
+}
+
+export interface ProductListing {
+  id: string;
+  productId: string;
+  partnerId: string;
+  partnerName: string;
+  partnerRating: number;
+  partnerLocation: string;
+  packQuantity: number; // e.g. 10 tablets, 15 tablets
+  packPrice: number; // total price
+  normalizedUnitPrice: number; // price per single tablet or unit
+  unitLabel: string; // e.g. "tablet" or "ml"
+  stockCount: number;
+  isAvailable: boolean;
+  freshnessTimestamp: string; // SLA indicator
+  isStale: boolean;
+  rankScore?: number;
+  rankFactors?: {
+    priceScore: number;
+    trustScore: number;
+    availabilityScore: number;
+    feedbackScore: number;
+    explanation: string;
+  };
+}
+
+export interface CartItem {
+  listingId: string;
+  listing: ProductListing;
+  canonicalProduct: CanonicalProduct;
+  quantity: number;
+}
+
+export interface OrderRecord {
+  id: string;
+  customerName: string;
+  customerEmail: string;
+  items: CartItem[];
+  totalAmount: number;
+  status: 'Created' | 'Paid/Confirmed' | 'Accepted by Partner' | 'Out for Delivery' | 'Completed' | 'Cancelled';
+  paymentStatus: 'Pending' | 'Verified Paid' | 'Failed' | 'Refunded';
+  createdAt: string;
+  deliveryAddress: string;
+  deliveryPin?: string;
+  paymentMethod?: string;
+  idempotencyKey?: string;
+  trackingTimeline: {
+    status: string;
+    timestamp: string;
+    completed: boolean;
+  }[];
+  // Phase 3 Scale enhancements
+  splitShipments?: MultiWarehouseSplitShipment[];
+  appliedCurrency?: SupportedCurrency;
+  appliedLanguage?: SupportedLanguage;
+}
+
+export interface AuditRecord {
+  id: string;
+  actorId: string;
+  actorRole: string;
+  timestamp: string;
+  actionType: string;
+  entityType: string;
+  entityId: string;
+  previousState?: string;
+  newState?: string;
+  reason?: string;
+  correlationId: string;
+  sourceContext: string;
+}
+
+export interface OperationalException {
+  id: string;
+  type: 'payment_mismatch' | 'stock_mismatch' | 'failed_fulfillment' | 'stale_catalog';
+  title: string;
+  description: string;
+  entityId: string;
+  severity: 'high' | 'medium' | 'critical';
+  status: 'open' | 'investigating' | 'resolved';
+  timestamp: string;
+  resolutionOptions: string[];
+}
+
+// Phase 1 MVP: User Profile & Authentication (FR-AUTH-01 to 04)
+export interface DeliveryAddress {
+  id: string;
+  label: string; // 'Home' | 'Office' | 'Parents'
+  recipientName: string;
+  phone: string;
+  street: string;
+  city: string;
+  pincode: string;
+  isDefault: boolean;
+}
+
+export interface UserProfile {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  role: AppUserRole;
+  verified: boolean;
+  addresses: DeliveryAddress[];
+  defaultAddressId: string;
+  activePrescriptionIds: string[];
+}
+
+// Phase 1 MVP: Prescription & AI OCR Validation (FR-SEARCH-05, FR-CART-02)
+export interface ExtractedPrescriptionEntity {
+  patientName?: string;
+  doctorName?: string;
+  doctorRegNumber?: string;
+  prescribedSalts: {
+    saltName: string;
+    dosage?: string;
+    frequency?: string;
+    duration?: string;
+    matchesGenericSalt?: boolean;
+  }[];
+  prescriptionDate?: string;
+  isExpired?: boolean;
+}
+
+export interface PrescriptionRecord {
+  id: string;
+  userId: string;
+  patientName: string;
+  doctorName: string;
+  doctorRegNumber: string;
+  issueDate: string;
+  validUntil: string;
+  imageUrl?: string;
+  rawOcrText?: string;
+  extractedEntities: ExtractedPrescriptionEntity;
+  status: 'verified' | 'flagged' | 'pending';
+  confidenceScore: number; // 0 to 100
+  validationNotes: string[];
+}
+
+// Phase 1 MVP: Interactive Payment Gateway (FR-PAY-01 to 06)
+export type PaymentMethodType = 'upi' | 'card' | 'netbanking' | 'cod';
+
+export interface PaymentSession {
+  idempotencyKey: string;
+  transactionRef: string;
+  amount: number;
+  currency: string;
+  method: PaymentMethodType;
+  status: 'initiated' | 'verifying' | 'settled' | 'failed';
+  provider: 'Razorpay / UPI' | 'Stripe' | 'Bank Direct' | 'Cash on Delivery';
+  timestamp: string;
+  gatewaySignature?: string;
+  errorCode?: string;
+  errorMessage?: string;
+}
+
+// Phase 1 MVP: Transactional Alerts & Notifications (FR-NOTIF-01)
+export interface NotificationMessage {
+  id: string;
+  type: 'sms' | 'whatsapp';
+  recipient: string;
+  title: string;
+  body: string;
+  timestamp: string;
+  status: 'delivered' | 'sent';
+  orderId?: string;
+}
+
+// Phase 2: Chronic Auto-Refill Subscriptions (Persona B)
+export type SubscriptionIntervalDays = 30 | 60 | 90;
+export type SubscriptionStatus = 'active' | 'paused' | 'cancelled';
+
+export interface ChronicSubscription {
+  id: string;
+  userId: string;
+  canonicalProduct: CanonicalProduct;
+  listing: ProductListing;
+  quantity: number;
+  intervalDays: SubscriptionIntervalDays;
+  startDate: string;
+  nextRefillDate: string;
+  status: SubscriptionStatus;
+  deliveryAddress: string;
+  monthlySavings: number;
+  autoPayMethod: 'UPI AutoPay' | 'Card Vault Token';
+  refillCount: number;
+}
+
+// Phase 2: Verified Patient Reviews & Regulatory Moderation
+export interface ProductReview {
+  id: string;
+  productId: string;
+  productName: string;
+  authorName: string;
+  authorLocation: string;
+  rating: number; // 1-5
+  date: string;
+  isVerifiedPurchase: boolean;
+  title: string;
+  comment: string;
+  conditionTreated: string; // e.g., "Type-2 Diabetes", "Mild Hypertension", "Fever & Pain"
+  clinicalFeedbackTags: string[]; // e.g. ["Exact bio-equivalent to Crocin", "Zero gastric irritation", "Huge 80% savings"]
+  helpfulCount: number;
+  status: 'approved' | 'flagged' | 'hidden';
+  pharmacistVerifiedNote?: string;
+}
+
+// Phase 2: Geospatial Proximity & Cold-Chain Telemetry
+export interface PharmacyGeoLocation {
+  partnerId: string;
+  partnerName: string;
+  latitude: number;
+  longitude: number;
+  address: string;
+  serviceRadiusKm: number;
+  hubType: 'Metro Super Hub' | 'Local Jan Aushadhi' | 'Express Chemist';
+  averageDispatchMinutes: number;
+  coldChainEquipped: boolean;
+}
+
+export interface DispatchRouteEstimate {
+  partnerId: string;
+  customerAddress: string;
+  distanceKm: number;
+  estimatedMinutes: number;
+  courierFleetType: 'Electric Two-Wheeler' | 'Temperature-Controlled Van';
+  courierName: string;
+  courierPhone: string;
+  currentLatitude: number;
+  currentLongitude: number;
+  storageTempCelsius: number;
+  temperatureStatus: 'Optimal Cold-Chain (2-8°C)' | 'Optimal Ambient (15-25°C)' | 'Temperature Warning';
+  handoverPin: string;
+  status: 'Assigning' | 'Dispatched' | 'At Local Hub' | 'Out for Delivery' | 'Arrived';
+}
+
+// Phase 2: Batch-Level Expiry & Quarantine Radar
+export interface MedicineBatchRecord {
+  id: string;
+  batchNumber: string;
+  productId: string;
+  productName: string;
+  partnerId: string;
+  partnerName: string;
+  mfgDate: string;
+  expiryDate: string;
+  stockUnits: number;
+  requiresColdChain: boolean;
+  targetTempRange: string; // e.g., "2°C - 8°C" or "15°C - 25°C"
+  currentTempCelsius: number;
+  status: 'Optimal' | 'Near Expiry (<6m)' | 'Critical (<3m)' | 'Quarantined';
+  daysToExpiry: number;
+  qcCertificateNumber: string;
+}
+
+// Phase 2: Customer Support & Dispute Desk
+export type TicketCategory = 'Damaged Package' | 'Delayed Delivery' | 'Prescription Query' | 'Refund Request' | 'Dosage Clarification';
+export type TicketPriority = 'P0 Critical' | 'P1 High' | 'P2 Medium';
+export type TicketStatus = 'Open' | 'Investigating' | 'Resolved';
+
+export interface SupportTicketMessage {
+  id: string;
+  sender: 'customer' | 'support_agent' | 'pharmacist';
+  senderName: string;
+  text: string;
+  timestamp: string;
+}
+
+export interface SupportTicket {
+  id: string;
+  orderId: string;
+  customerName: string;
+  customerEmail: string;
+  category: TicketCategory;
+  priority: TicketPriority;
+  status: TicketStatus;
+  createdAt: string;
+  resolvedAt?: string;
+  subject: string;
+  resolutionNote?: string;
+  refundIssued?: number;
+  messages: SupportTicketMessage[];
+}
+
+// Phase 2: Pharmacy Partner Analytics & SLA Performance
+export interface PartnerAnalyticsSummary {
+  partnerId: string;
+  period: string;
+  totalGrossRevenue: number;
+  totalOrdersFulfilled: number;
+  slaCompliancePercent: number;
+  averageFulfillmentTimeMins: number;
+  chronicRetentionRate: number;
+  batchWasteRate: number;
+  topSellingMolecules: { name: string; units: number; revenue: number }[];
+}
+
+// Phase 3: Tele-Consultation & Digital Rx Renewal (PRD Section 10 / P1)
+export interface DoctorProfile {
+  id: string;
+  name: string;
+  title: string; // e.g. "MBBS, MD (Internal Medicine)"
+  specialty: string; // e.g. "Diabetologist & General Physician"
+  regNumber: string; // e.g. "REG-MCI-2018-84920"
+  experienceYears: number;
+  consultationFee: number; // in INR
+  rating: number;
+  reviewCount: number;
+  avatarUrl: string;
+  availableSlot: string;
+  languages: string[];
+  bio: string;
+}
+
+export interface ClinicalVitalSigns {
+  bloodPressure: string; // e.g. "128/82 mmHg"
+  bloodGlucose: string; // e.g. "114 mg/dL Fasting"
+  heartRateBpm: number;
+  temperatureFahrenheit: number;
+  knownAllergies: string[];
+  chronicDiagnoses: string[];
+}
+
+export interface TeleConsultationSession {
+  id: string;
+  patientId: string;
+  patientName: string;
+  doctor: DoctorProfile;
+  callStatus: 'waiting' | 'connected' | 'completed';
+  scheduledTime: string;
+  durationSeconds: number;
+  diagnosisNotes: string;
+  icd10Code: string;
+  prescribedSalts: {
+    saltName: string;
+    dosage: string;
+    frequency: string;
+    durationDays: number;
+    substituteGenericProduct: CanonicalProduct;
+  }[];
+  digitalRx?: PrescriptionRecord;
+  vitals: ClinicalVitalSigns;
+  doctorSignatureHash?: string;
+  createdAt: string;
+}
+
+// Phase 3: National Pharmacy Network & B2B ERP Connectors (PRD Section 14 / P2)
+export type ErpSyncStatus = 'online' | 'syncing' | 'error' | 'maintenance';
+export type ErpProtocolType = 'FHIR R4 JSON REST' | 'EDI 850/855/856' | 'National Health Stack Open API';
+
+export interface NationalErpConnector {
+  id: string;
+  chainName: 'Apollo Pharmacy National' | 'MedPlus Retail Network' | 'Jan Aushadhi PMBI Central';
+  logoBadge: string;
+  protocol: ErpProtocolType;
+  endpointUrl: string;
+  syncStatus: ErpSyncStatus;
+  lastSyncTimestamp: string;
+  pingLatencyMs: number;
+  totalMappedSkus: number;
+  discrepanciesResolved24h: number;
+  autoReconcileEnabled: boolean;
+  warehouseLocation: string;
+}
+
+// Phase 3: Multi-Warehouse Split Routing
+export interface MultiWarehouseSplitShipment {
+  shipmentId: string;
+  originType: 'Local Express Chemist' | 'National Central Warehouse';
+  originName: string;
+  items: CartItem[];
+  subtotal: number;
+  estimatedDeliveryMinutes: number;
+  courierFleetType: 'Electric Two-Wheeler' | 'Cold-Chain Temperature Controlled Van';
+  status: 'Preparing' | 'In Transit' | 'Delivered';
+  handoverPin: string;
+  tempStatus: string;
+}
+
+// Phase 3: Multi-Currency & Internationalization (i18n)
+export type SupportedCurrency = 'INR' | 'USD' | 'EUR' | 'GBP' | 'AED';
+export type SupportedLanguage = 'en' | 'hi' | 'ta' | 'te' | 'bn';
+
+export interface CurrencyConfig {
+  code: SupportedCurrency;
+  symbol: string;
+  rateAgainstINR: number;
+  name: string;
+}
+
+// Phase 3: Autonomous Clinical Drug-Drug Interaction (DDI) Safety Engine
+export type InteractionSeverity = 'safe' | 'moderate' | 'critical';
+
+export interface DrugInteractionAlert {
+  id: string;
+  severity: InteractionSeverity;
+  primaryDrug: string;
+  interactingDrug: string;
+  mechanism: string;
+  clinicalAdvisory: string;
+  requiresPharmacistOverride: boolean;
+}
+
+// Phase 4: Ayushman Bharat Digital Mission (ABDM) & ABHA Health Locker
+export interface AbdmConsentArtifact {
+  id: string;
+  purpose: string;
+  hiuName: string;
+  status: 'GRANTED' | 'REQUESTED' | 'REVOKED' | 'EXPIRED';
+  fromDate: string;
+  toDate: string;
+  dataTypes: string[];
+  createdAt: string;
+}
+
+export interface AbhaProfile {
+  abhaNumber: string; // 14-digit format e.g. "14-8921-4029-1182"
+  abhaAddress: string; // e.g. "aarav.sharma@abdm"
+  fullName: string;
+  gender: 'M' | 'F' | 'Other';
+  dateOfBirth: string;
+  phoneLinked: string;
+  kycStatus: 'Verified' | 'Pending_KYC' | 'Unlinked';
+  kycMethod: 'Aadhaar_OTP' | 'Driving_License' | 'Biometric';
+  linkedHospital: string;
+  qrCardToken: string;
+  consentArtifacts: AbdmConsentArtifact[];
+  linkedHealthRecordsCount: number;
+}
+
+// Phase 4: Multilingual Voice Pharmacist ("Arogya Vani")
+export interface VoicePharmacistQuery {
+  id: string;
+  language: SupportedLanguage;
+  spokenTranscript: string;
+  detectedGenericSalt: string;
+  matchedCanonicalProductId: string;
+  audioExplanationText: string;
+  savingsAnnualINR: number;
+  waveformFrequencies: number[];
+}
+
+// Phase 4: Statutory Dual-Pharmacist Dispense Sign Station (Section 65 Drugs Act)
+export interface DualPharmacistDispenseRecord {
+  id: string;
+  orderId: string;
+  qcPharmacist: {
+    name: string;
+    licenseReg: string;
+    council: string;
+    checkedAt: string;
+    passedQC: boolean;
+    coldChainVerified: boolean;
+  };
+  dispensePharmacist: {
+    name: string;
+    licenseReg: string;
+    council: string;
+    signedAt: string;
+    signatureHash: string;
+  };
+  gs1DataMatrixBarcode: string;
+  tamperSealNumber: string;
+}
+
+// Phase 4: Pharmacovigilance Programme of India (PvPI) ADR Report
+export interface PvPiAdverseReactionReport {
+  id: string;
+  orderId: string;
+  medicineName: string;
+  genericSalt: string;
+  batchNumber: string;
+  severity: 'Mild' | 'Moderate' | 'Severe' | 'Life_Threatening';
+  suspectedReaction: string;
+  reporterRole: 'Patient' | 'Pharmacist' | 'Consulting_Doctor';
+  reporterName: string;
+  ipcSubmissionStatus: 'Submitted_to_PvPI' | 'Under_Review' | 'Acknowledged';
+  filedAt: string;
+}
+
+// Phase 4: Rural Jan Aushadhi Kendra Kiosk Mode (PMBJP)
+export interface JanAushadhiKioskSession {
+  kioskId: string;
+  kendraCode: string;
+  operatorName: string;
+  isOffline: boolean;
+  pendingSyncQueue: Array<{
+    transactionId: string;
+    medicineName: string;
+    packQty: number;
+    amount: number;
+    timestamp: string;
+  }>;
+  todaySubsidizedSavingsINR: number;
+}
+
+// Phase 5: Cryptographic Blockchain Drug Provenance
+export interface DrugProvenanceBlock {
+  blockIndex: number;
+  batchNumber: string;
+  timestamp: string;
+  stage: 'API_SYNTHESIS' | 'WHO_GMP_FORMULATION' | 'CDSCO_RELEASE' | 'COLD_CHAIN_TRANSIT' | 'PHARMACY_RECEIPT' | 'PATIENT_DISPENSED';
+  stageTitle: string;
+  location: string;
+  actor: string;
+  certificateId: string;
+  blockHash: string;
+  prevHash: string;
+  verificationBadge: string;
+}
+
+// Phase 5: Predictive Epidemic Supply Chain Intelligence (IDSP)
+export interface EpidemicSurveillanceSignal {
+  id: string;
+  diseaseName: string;
+  region: string;
+  state: string;
+  activeCaseVelocity: '+42% this week' | '+18% this week' | 'Stable';
+  spikedSaltRequired: string;
+  recommendedBufferDays: number;
+  alertLevel: 'NORMAL' | 'ELEVATED' | 'EPIDEMIC_OUTBREAK';
+  actionTaken: string;
+}
+
+// Phase 5: Clinical Pharmacokinetic (PK) Equivalence Metrics
+export interface BioequivalenceClinicalMetrics {
+  canonicalProductId: string;
+  genericSalt: string;
+  innovatorBrand: string;
+  aucRatioPercent: number; // 90% Confidence Interval: 80% - 125% acceptable
+  cmaxRatioPercent: number; // Peak plasma concentration ratio
+  tmaxDeltaHours: number; // Time to maximum plasma concentration delta
+  sampleSize: number;
+  isBioequivalentConfirmed: boolean;
+  clinicalStudyId: string;
+}
+
+
+

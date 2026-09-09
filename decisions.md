@@ -731,5 +731,48 @@ Deploy an integrated **Epidemic Disease Surveillance & Pharmacokinetic (PK) Bioe
 - Component: `src/components/EpidemicIntelligenceModal.tsx`.
 - Header button and quick actions wired in `CoreAppLayout.tsx`.
 
+---
+
+## ADR-023: Full Separation of Frontend and Backend Subfolders
+
+- **Date**: 2026-09-09
+- **Status**: Approved
+- **Deciders**: Principal Systems Architect, Lead Full-Stack Engineer, DevOps Lead
+
+### Context / Problem
+As genericMed scaled across all 5 operational phases (including ABDM consent manager, dual-pharmacist verification, blockchain provenance, and epidemic intelligence), all UI views, client logic, and transactional seed datasets were bundled together into a single client-side repository. To enable clean team decoupling, independent cloud container deployments, dedicated CI/CD pipelines, and secure server-side business logic, the repository needed a clean physical separation into `frontend/` and `backend/` subfolders.
+
+### Decision Taken
+Refactor the codebase into dedicated, decoupled subfolders:
+1. **`backend/` (Node.js + Express + TypeScript)**:
+   - Dedicated `package.json` and `tsconfig.json` (NodeNext).
+   - Independent environment configuration (`backend/.env`).
+   - Modular Express REST API routers (`catalog`, `orders`, `prescriptions`, `subscriptions`, `reviews`, `batches`, `tickets`, `audit`, `abha`, `dispense`, `pvpi`, `erp`, `provenance`, `epidemic`).
+   - In-memory transactional data store (`services/store.ts`) holding domain state.
+   - Comprehensive `/api/v1/health` and endpoint catalog.
+2. **`frontend/` (React 19 + Vite + TypeScript)**:
+   - Dedicated `package.json` and `tsconfig.json`.
+   - Independent environment configuration (`frontend/.env`).
+   - Typed REST API client (`src/api/client.ts`) with automatic request handling, Vite reverse proxy (`/api` -> `http://localhost:5000`), and resilient fallback.
+   - All components, layouts, and styles self-contained in `frontend/src/`.
+3. **Root Monorepo Orchestrator**:
+   - Root `package.json` providing single-command installation (`npm run install:all`), concurrent dev server launching (`npm run dev`), and production builds (`npm run build`).
+   - Root `README.md` and updated `.gitignore`.
+
+### Reasoning
+- Enforces strict architectural separation of concerns between presentation and domain services.
+- Eliminates dependency conflicts between client-side build tools (Vite/Tailwind) and server runtimes (Express/Node).
+- Provides a clear path to production deployment where backend runs in a Node container and frontend is served from a CDN.
+
+### Alternatives Considered
+- **Shared Monorepo with Nx/Turborepo**: Over-complex tooling with high configuration overhead for current team size.
+- **Direct Backend Code Import in Frontend**: Violates security boundaries and breaks browser bundling with Node.js built-ins.
+
+### Impact on Project
+- Reorganized directory structure into `frontend/` and `backend/`.
+- Created `frontend/src/api/client.ts` and connected all mutations.
+- Authored comprehensive root `README.md`.
+
+
 
 

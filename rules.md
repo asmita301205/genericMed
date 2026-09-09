@@ -59,40 +59,52 @@ const updateItem = (listingId: string, delta: number): void => {
 
 ## 2. Folder Structure Rules
 
-The codebase must adhere to the following directory layout. Do **not** introduce arbitrary top-level directories.
+The codebase must adhere to the following decoupled monorepo directory layout. Do **not** introduce arbitrary top-level directories.
 
 ```
 genericMed/
-├── public/                 # Static assets, favicon, web manifest
-├── src/
-│   ├── components/         # Reusable and page-level React components
-│   │   ├── CoreAppLayout.tsx          # Master application shell & navigation
-│   │   ├── CustomerMarketplace.tsx    # Customer search, comparison & checkout
-│   │   ├── OrdersTracker.tsx          # Real-time order status & tracking
-│   │   ├── PartnerPortal.tsx          # Pharmacy store inventory & orders queue
-│   │   ├── AdminOperationsPortal.tsx  # Admin metrics, audit logs & exceptions
-│   │   ├── ArchitectureDiagram.tsx    # Interactive 5-tier architecture viewer
-│   │   ├── PrdViewer.tsx              # Interactive PRD document viewer
-│   │   └── HotlinkStudio.tsx          # Media and visual asset studio
-│   ├── data/               # Seed datasets, PRD content, architecture nodes
-│   │   ├── genericMedData.ts          # Products, listings, orders, audit logs
-│   │   ├── prdData.ts                 # Official PRD sections and metadata
-│   │   └── architectureData.ts        # Architecture tiers, nodes and connections
-│   ├── index.css           # Global styles and Tailwind CSS v4 directives
-│   ├── main.tsx            # Vite React entry point
-│   ├── types.ts            # Authoritative TypeScript domain definitions
-│   └── App.tsx             # Root component orchestrating global state & tabs
-├── decisions.md            # Architecture & Product Decision Records (ADR)
-├── rules.md                # AI engineering & operating rules (this file)
-├── memory.md               # Long-term project memory, schemas & roadmap
-├── changelog.md            # Chronological project version history
-├── package.json            # NPM dependencies and scripts
-├── tsconfig.json           # TypeScript compiler configuration
-└── vite.config.ts          # Vite build tool configuration
+├── frontend/                     # React 19 Client SPA
+│   ├── src/
+│   │   ├── api/client.ts         # Typed REST API Client with fallback resilience
+│   │   ├── components/           # Reusable & page-level React components
+│   │   ├── data/                 # Client seed/fallback fixtures
+│   │   ├── utils/                # i18n & currency formatters
+│   │   ├── index.css             # Tailwind CSS v4 styles
+│   │   ├── main.tsx              # Vite React entry point
+│   │   ├── types.ts              # Authoritative domain contracts
+│   │   └── App.tsx               # Root component orchestrating state & tabs
+│   ├── public/                   # Static assets & icons
+│   ├── index.html                # Vite HTML shell
+│   ├── package.json              # Frontend dependencies
+│   ├── tsconfig.json             # Frontend TypeScript config
+│   ├── vite.config.ts            # Vite proxy to backend API
+│   └── .env                      # Frontend environment variables
+│
+├── backend/                      # Node.js Express REST API
+│   ├── src/
+│   │   ├── routes/               # Modular Express API routers
+│   │   ├── services/store.ts     # In-memory transactional data store
+│   │   ├── data/                 # Seed domain datasets
+│   │   ├── types.ts              # Backend domain contracts
+│   │   └── server.ts             # Express server entry point
+│   ├── package.json              # Backend dependencies
+│   ├── tsconfig.json             # Backend TypeScript config (NodeNext)
+│   └── .env                      # Backend environment variables
+│
+├── package.json                  # Root monorepo orchestration scripts
+├── README.md                     # Comprehensive setup & execution guide
+├── .gitignore                    # Root git exclusions
+├── decisions.md                  # Architecture & Product Decision Records (ADR)
+├── rules.md                      # AI engineering & operating rules (this file)
+├── memory.md                     # Long-term project memory, schemas & roadmap
+├── changelog.md                  # Chronological project version history
+└── phases.md                     # Complete 5-phase lifecycle architecture
 ```
 
 ### Directory Placement Policy
-- **New Feature Components**: Place in `src/components/`. If a feature becomes large, create a subdirectory (e.g., `src/components/checkout/`).
+- **Frontend Code**: Place all UI components in `frontend/src/components/`, client utilities in `frontend/src/utils/`, and API methods in `frontend/src/api/`.
+- **Backend Code**: Place all API route definitions in `backend/src/routes/` and database/business logic in `backend/src/services/`.
+- **Domain Models & Types**: Synchronized across `frontend/src/types.ts` and `backend/src/types.ts`.
 - **Domain Models & Types**: Always place in `src/types.ts`.
 - **Mock Data & Fixtures**: Place in `src/data/`.
 - **Helper Utilities**: Create `src/utils/` for pure computational logic (e.g., unit price calculator, ranking algorithms, currency formatters).

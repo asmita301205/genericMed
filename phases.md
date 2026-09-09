@@ -253,33 +253,49 @@ Counterfeit medicines account for up to 10%–15% of pharmaceuticals in emerging
 
 ```
 genericMed/
-├── src/
-│   ├── App.tsx                          # Root Application controller with state & modal mounts
-│   ├── types.ts                         # Strict TypeScript contracts for all 5 phases (zero any)
-│   ├── main.tsx                         # React 19 root entrypoint
-│   ├── data/
-│   │   └── genericMedData.ts            # Canonical datasets, seed provenance ledger, epidemic signals
-│   └── components/
-│       ├── CoreAppLayout.tsx            # Multi-screen navigator with phase action triggers
-│       ├── CustomerMarketplace.tsx      # Phase 1-5 Discovery, Voice AI, ABHA trigger, Provenance check
-│       ├── PartnerPortal.tsx            # Pharmacy partner inventory, SLA, Rule 65 QC Station, Kiosk trigger
-│       ├── AdminOperationsPortal.tsx    # Governance, ABDM consent registry, PvPI ADR audit, Blockchain auditor
-│       ├── ArchitectureDiagram.tsx      # Visual system architecture topology & data flow
-│       ├── PrdViewer.tsx                # Embedded 25-section PRD specification reader
-│       ├── HotlinkStudio.tsx            # Asset hotlink management & screenshot binding studio
-│       ├── AuthModal.tsx                # Role-switcher modal (Customer, Partner Chemist, Admin Ops)
-│       ├── NotificationToastContainer.tsx # Real-time simulated transactional SMS/WhatsApp toasts
-│       ├── SubscriptionManagerModal.tsx # Phase 2: Chronic 30/60/90-day auto-refill subscriptions
-│       ├── LiveRouteTrackerModal.tsx    # Phase 2: Leaflet GPS route tracking & 2°C-8°C cold-chain telemetry
-│       ├── SupportTicketModal.tsx       # Phase 2: Customer dispute desk & return refund portal
-│       ├── TeleConsultationModal.tsx    # Phase 3: WebRTC video tele-consultation & digital Rx renewal
-│       ├── NationalNetworkModal.tsx     # Phase 3: B2B ERP multi-warehouse synchronization hub
-│       ├── AbhaHealthLockerModal.tsx    # Phase 4: 14-digit ABHA ID card & ABDM consent manager
-│       ├── VoicePharmacistModal.tsx     # Phase 4: Arogya Vani multilingual voice pharmacist assistant
-│       ├── DualPharmacistSignStation.tsx# Phase 4: Rule 65 two-pharmacist QC check & GS1 2D DataMatrix generator
-│       ├── RuralKioskModal.tsx          # Phase 4: PMBJP Jan Aushadhi Kendra offline-first POS kiosk
-│       ├── BlockchainProvenanceModal.tsx# Phase 5: 6-block cryptographic provenance hash chain explorer
-│       └── EpidemicIntelligenceModal.tsx# Phase 5: IDSP outbreak heatmap, AI buffer forecaster & PK curve viewer
+├── frontend/                            # React 19 Client SPA
+│   ├── src/
+│   │   ├── api/client.ts                # Strongly typed REST API client with fallback resilience
+│   │   ├── App.tsx                      # Root Application controller with state & modal mounts
+│   │   ├── types.ts                     # Strict TypeScript contracts for all 5 phases (zero any)
+│   │   ├── main.tsx                     # React 19 root entrypoint
+│   │   ├── data/genericMedData.ts       # Client seed/fallback datasets
+│   │   └── components/
+│   │       ├── CoreAppLayout.tsx        # Multi-screen navigator with phase action triggers
+│   │       ├── CustomerMarketplace.tsx  # Phase 1-5 Discovery, Voice AI, ABHA trigger, Provenance check
+│   │       ├── PartnerPortal.tsx        # Pharmacy partner inventory, SLA, Rule 65 QC Station, Kiosk trigger
+│   │       ├── AdminOperationsPortal.tsx# Governance, ABDM consent registry, PvPI ADR audit, Blockchain auditor
+│   │       ├── ArchitectureDiagram.tsx  # Visual system architecture topology & data flow
+│   │       ├── PrdViewer.tsx            # Embedded 25-section PRD specification reader
+│   │       ├── HotlinkStudio.tsx        # Asset hotlink management & screenshot binding studio
+│   │       ├── AuthModal.tsx            # Role-switcher modal (Customer, Partner Chemist, Admin Ops)
+│   │       ├── NotificationToastContainer.tsx # Real-time simulated transactional SMS/WhatsApp toasts
+│   │       ├── SubscriptionManagerModal.tsx # Phase 2: Chronic 30/60/90-day auto-refill subscriptions
+│   │       ├── LiveRouteTrackerModal.tsx# Phase 2: Leaflet GPS route tracking & 2°C-8°C cold-chain telemetry
+│   │       ├── SupportTicketModal.tsx   # Phase 2: Customer dispute desk & return refund portal
+│   │       ├── TeleConsultationModal.tsx# Phase 3: WebRTC video tele-consultation & digital Rx renewal
+│   │       ├── NationalNetworkModal.tsx # Phase 3: B2B ERP multi-warehouse synchronization hub
+│   │       ├── AbhaHealthLockerModal.tsx# Phase 4: 14-digit ABHA ID card & ABDM consent manager
+│   │       ├── VoicePharmacistModal.tsx # Phase 4: Arogya Vani multilingual voice pharmacist assistant
+│   │       ├── DualPharmacistSignStation.tsx # Phase 4: Rule 65 two-pharmacist QC check & GS1 2D DataMatrix
+│   │       ├── RuralKioskModal.tsx      # Phase 4: PMBJP Jan Aushadhi Kendra offline-first POS kiosk
+│   │       ├── BlockchainProvenanceModal.tsx # Phase 5: 6-block cryptographic provenance hash chain explorer
+│   │       └── EpidemicIntelligenceModal.tsx # Phase 5: IDSP outbreak heatmap, AI buffer forecaster & PK curve viewer
+│   ├── package.json                     # Frontend dependencies
+│   ├── tsconfig.json                    # Frontend TypeScript configuration
+│   └── vite.config.ts                   # Vite proxy to backend API (port 3000 -> 5000)
+│
+├── backend/                             # Express REST API Server
+│   ├── src/
+│   │   ├── routes/                      # Modular resource routes (catalog, orders, prescriptions, etc.)
+│   │   ├── services/store.ts            # In-memory transactional data store
+│   │   ├── types.ts                     # Strict backend domain definitions
+│   │   └── server.ts                    # Express server listening on port 5000
+│   ├── package.json                     # Backend dependencies
+│   └── tsconfig.json                    # Backend TypeScript configuration (NodeNext)
+│
+├── package.json                         # Root monorepo orchestration scripts
+└── README.md                            # Complete setup, installation, and endpoint documentation
 ```
 
 ---

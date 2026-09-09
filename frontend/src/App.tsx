@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { apiClient } from './api/client';
 import {
   ActiveTab,
   AppScreen,
@@ -224,6 +225,61 @@ export function App() {
   const [selectedProvenanceBatch, setSelectedProvenanceBatch] = useState('BATCH-MET-2025-C4');
   const [isEpidemicModalOpen, setIsEpidemicModalOpen] = useState(false);
 
+  // Synchronize state with Backend REST API on mount
+  useEffect(() => {
+    let isMounted = true;
+    const loadDataFromBackend = async () => {
+      try {
+        const [
+          lists,
+          ords,
+          audits,
+          rxs,
+          subs,
+          revs,
+          batches,
+          tix,
+          erps,
+          abha,
+          dispenses,
+          pvpis
+        ] = await Promise.all([
+          apiClient.getListings(),
+          apiClient.getOrders(),
+          apiClient.getAuditLogs(),
+          apiClient.getPrescriptions(),
+          apiClient.getSubscriptions(),
+          apiClient.getReviews(),
+          apiClient.getBatches(),
+          apiClient.getTickets(),
+          apiClient.getErpConnectors(),
+          apiClient.getAbhaProfile(),
+          apiClient.getDualDispenses(),
+          apiClient.getPvpiReports()
+        ]);
+
+        if (!isMounted) return;
+        if (lists?.length) setListings(lists);
+        if (ords?.length) setOrders(ords);
+        if (audits?.length) setAuditLogs(audits);
+        if (rxs?.length) setPrescriptions(rxs);
+        if (subs?.length) setSubscriptions(subs);
+        if (revs?.length) setReviews(revs);
+        if (batches?.length) setBatchRecords(batches);
+        if (tix?.length) setSupportTickets(tix);
+        if (erps?.length) setErpConnectors(erps);
+        if (abha?.abhaNumber) setAbhaProfile(abha);
+        if (dispenses?.length) setDualPharmacistRecords(dispenses);
+        if (pvpis?.length) setPvpiReports(pvpis);
+      } catch (err) {
+        console.warn('Backend API connection fallback active:', err);
+      }
+    };
+
+    loadDataFromBackend();
+    return () => { isMounted = false; };
+  }, []);
+
   // Cart operations
   const handleAddToCart = (listing: ProductListing, canonicalProduct: CanonicalProduct) => {
     setCart(prev => {
@@ -268,6 +324,7 @@ export function App() {
       ...prev,
       activePrescriptionIds: [rx.id, ...prev.activePrescriptionIds]
     }));
+    apiClient.uploadPrescription(rx).catch(() => {});
 
     handleAppendAudit({
       actorId: userProfile.id,
@@ -329,6 +386,7 @@ export function App() {
 
     setOrders(prev => [newOrder, ...prev]);
     setCart([]);
+    apiClient.createOrder(newOrder).catch(() => {});
 
     // Trigger simulated SMS confirmation
     const newSms: NotificationMessage = {
@@ -417,6 +475,7 @@ export function App() {
   // Partner stock and price update
   const handleUpdateListingStock = (listingId: string, newStock: number) => {
     setListings(prev => prev.map(l => l.id === listingId ? { ...l, stockCount: newStock, freshnessTimestamp: 'Updated just now' } : l));
+    apiClient.updateListingStock(listingId, newStock).catch(() => {});
   };
 
   const handleUpdateListingPrice = (listingId: string, newPrice: number) => {
@@ -432,6 +491,7 @@ export function App() {
       }
       return l;
     }));
+    apiClient.updateListingPrice(listingId, newPrice).catch(() => {});
   };
 
   // Partner advances order state
@@ -455,6 +515,7 @@ export function App() {
       }
       return o;
     }));
+    apiClient.updateOrderStatus(orderId, newStatus).catch(() => {});
 
     handleAppendAudit({
       actorId: 'partner-chemist',
@@ -845,6 +906,7 @@ export function App() {
         c.id === consentId ? { ...c, status } : c
       )
     }));
+    apiClient.updateConsentStatus(consentId, status).catch(() => {});
 
     handleAppendAudit({
       actorId: userProfile.id,
@@ -862,6 +924,7 @@ export function App() {
   // Phase 4: Dual-Pharmacist Dispense Authorization
   const handleCompleteDualDispense = (record: DualPharmacistDispenseRecord) => {
     setDualPharmacistRecords(prev => [record, ...prev]);
+    apiClient.createDualDispense(record).catch(() => {});
 
     // Update corresponding order status
     handleUpdateOrderStatus(record.orderId, 'Dispensed & Sealed with Quality Audit');

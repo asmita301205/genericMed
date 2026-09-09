@@ -11,6 +11,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [6.0.0-separation] - 2026-09-09
+
+### Added
+- **Complete Decoupling of Frontend and Backend**:
+  - Reorganized project into dedicated `frontend/` and `backend/` subfolders with independent `package.json`, `tsconfig.json`, and `.env` files.
+  - Built Express 4.x REST API server in `backend/` with modular routing across catalog, orders, prescriptions, subscriptions, reviews, batches, tickets, audit, ABHA, dispense, PvPI, ERP, provenance, and epidemic intelligence.
+  - Built typed API client (`frontend/src/api/client.ts`) with Vite reverse proxy support (`/api` -> `http://localhost:5000`) and graceful fallback resilience.
+  - Created root monorepo orchestration scripts (`install:all`, `dev`, `build`, etc.) in root `package.json`.
+  - Authored comprehensive root `README.md` with step-by-step installation, execution, and endpoint documentation.
+
+### Changed
+- Migrated all React 19 UI components, styles, and assets into `frontend/src/`.
+- Updated `App.tsx` state handlers to communicate asynchronously with backend REST endpoints.
+- Updated root `.gitignore` to cover both subfolders.
+
+---
+
 ## [5.0.0-phase5] - 2026-09-09
 
 ### Added

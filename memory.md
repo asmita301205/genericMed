@@ -21,22 +21,25 @@ This document serves as the persistent memory, architectural index, and domain k
 
 ---
 
-## 2. Tech Stack
+## 2. Tech Stack & Decoupled Architecture
 
-### Frontend & UI
+### Frontend (`frontend/`)
 - **Core Framework**: React 19 (`react@^19.0.1`, `react-dom@^19.0.1`)
 - **Language**: TypeScript 5.8+ (`typescript@~5.8.2`)
 - **Styling**: Tailwind CSS v4 (`@tailwindcss/vite@^4.1.14`, `tailwindcss@^4.1.14`)
 - **Component Icons**: Lucide React (`lucide-react@^0.546.0`)
 - **Animations**: Motion (`motion@^12.23.24`)
-- **Build Tool & Dev Server**: Vite 6.2 (`vite@^6.2.3`) running on port `3000`
+- **Build Tool & Dev Server**: Vite 6.2 (`vite@^6.2.3`) running on port `3000` with reverse proxy to `http://localhost:5000`
+- **API Client**: Strongly typed REST API client (`src/api/client.ts`) with automatic fallback resilience
 
-### Backend & Integrations (Architecture Blueprint)
-- **Edge Ingress / Reverse Proxy**: Nginx with TLS 1.3, CSP enforcement, rate limiting
-- **Application Services**: Node.js / Express or Go gRPC domain microservices
-- **AI / LLM Integration**: `@google/genai` (^2.4.0) for prescription OCR parsing and natural language medicine queries
-- **Data Persistence**: Relational SQL ledger (PostgreSQL) for catalog and orders; append-only immutable ledger for Section 18 audit trails
-- **External Gateways**: Razorpay / Stripe for payment processing, Twilio / Gupshup for transactional SMS alerts, Dunzo / Porter / Shadowfax for courier dispatch
+### Backend (`backend/`)
+- **Runtime & Server**: Node.js ES2022 + Express 4.x (`express@^4.21.2`)
+- **Execution & Watch**: `tsx@^4.21.0` watch mode and `tsc` compilation
+- **Language**: TypeScript 5.8+ strictly typed (`NodeNext` module resolution)
+- **Middleware**: `cors@^2.8.5` with configured origin filtering, `dotenv@^17.2.3`
+- **Data Persistence**: In-memory transactional data store (`services/store.ts`) with domain seed datasets
+- **Port**: `5000` (configurable via `PORT` environment variable)
+- **Health Check & Endpoints**: Fully modular routers under `/api/v1/`
 
 ---
 
