@@ -17,6 +17,18 @@ import erpRoutes from './routes/erp.routes.js';
 import provenanceRoutes from './routes/provenance.routes.js';
 import epidemicRoutes from './routes/epidemic.routes.js';
 
+import { connectDB, isDbConnected } from './services/db.js';
+import { store } from './services/store.js';
+import {
+  OrderModel,
+  ListingModel,
+  ProductModel,
+  PrescriptionModel,
+  TicketModel,
+  PvpiReportModel,
+  AuditLogModel
+} from './models/index.js';
+
 dotenv.config();
 
 const app = express();
@@ -44,8 +56,65 @@ app.get('/api/v1/health', (_req: Request, res: Response) => {
     uptime: process.uptime(),
     timestamp: new Date().toISOString(),
     service: 'genericMed Enterprise REST API',
+    database: isDbConnected() ? 'MongoDB Atlas (Cluster0 Connected)' : 'In-Memory Fallback Active',
     version: '1.0.0'
   });
+});
+
+// Database Live Status & Inspection Endpoint
+app.get('/api/v1/db-status', async (_req: Request, res: Response) => {
+  const connected = isDbConnected();
+  if (!connected) {
+    return res.json({
+      status: 'fallback_mode',
+      connected: false,
+      database: 'In-memory fallback store active',
+      storeOrdersCount: store.getOrders().length,
+      storeListingsCount: store.getListings().length
+    });
+  }
+
+  try {
+    const [
+      ordersCount,
+      listingsCount,
+      productsCount,
+      rxsCount,
+      ticketsCount,
+      pvpiCount,
+      auditsCount,
+      recentOrders
+    ] = await Promise.all([
+      OrderModel.countDocuments(),
+      ListingModel.countDocuments(),
+      ProductModel.countDocuments(),
+      PrescriptionModel.countDocuments(),
+      TicketModel.countDocuments(),
+      PvpiReportModel.countDocuments(),
+      AuditLogModel.countDocuments(),
+      OrderModel.find().sort({ createdAt: -1 }).limit(5).lean()
+    ]);
+
+    res.json({
+      status: 'connected',
+      connected: true,
+      database: 'MongoDB Atlas (Cluster0)',
+      databaseName: 'genericmed',
+      timestamp: new Date().toISOString(),
+      counts: {
+        orders: ordersCount,
+        listings: listingsCount,
+        products: productsCount,
+        prescriptions: rxsCount,
+        supportTickets: ticketsCount,
+        pvpiReports: pvpiCount,
+        auditLogs: auditsCount
+      },
+      recentOrders
+    });
+  } catch (err) {
+    res.status(500).json({ error: (err as Error).message });
+  }
 });
 
 // API Routes Mounting
@@ -73,7 +142,16 @@ app.use((err: Error, _req: Request, res: Response, _next: express.NextFunction) 
   });
 });
 
-app.listen(PORT, () => {
-  console.log(`🚀 genericMed Backend API running on http://localhost:${PORT}`);
-  console.log(`📋 Health check: http://localhost:${PORT}/api/v1/health`);
-});
+// Bootstrap server and connect to MongoDB Atlas
+async function startServer() {
+  await connectDB();
+  await store.syncFromDb();
+
+  app.listen(PORT, () => {
+    console.log(`🚀 genericMed Backend API running on http://localhost:${PORT}`);
+    console.log(`📋 Health check: http://localhost:${PORT}/api/v1/health`);
+    console.log(`🔍 Live DB Status: http://localhost:${PORT}/api/v1/db-status`);
+  });
+}
+
+startServer();
