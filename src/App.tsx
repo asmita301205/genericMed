@@ -13,7 +13,12 @@ import {
   PrescriptionRecord,
   NotificationMessage,
   PaymentSession,
-  AppUserRole
+  AppUserRole,
+  ChronicSubscription,
+  ProductReview,
+  MedicineBatchRecord,
+  SupportTicket,
+  SubscriptionIntervalDays
 } from './types';
 import { CoreAppLayout } from './components/CoreAppLayout';
 import { ArchitectureDiagram } from './components/ArchitectureDiagram';
@@ -21,6 +26,9 @@ import { PrdViewer } from './components/PrdViewer';
 import { HotlinkStudio } from './components/HotlinkStudio';
 import { AuthModal } from './components/AuthModal';
 import { NotificationToastContainer } from './components/NotificationToastContainer';
+import { SubscriptionManagerModal } from './components/SubscriptionManagerModal';
+import { LiveRouteTrackerModal } from './components/LiveRouteTrackerModal';
+import { SupportTicketModal } from './components/SupportTicketModal';
 import {
   CANONICAL_PRODUCTS,
   PRODUCT_LISTINGS,
@@ -28,7 +36,12 @@ import {
   INITIAL_AUDIT_LOGS,
   INITIAL_EXCEPTIONS,
   DEFAULT_USER_PROFILE,
-  SAMPLE_PRESCRIPTIONS
+  SAMPLE_PRESCRIPTIONS,
+  SAMPLE_SUBSCRIPTIONS,
+  SAMPLE_REVIEWS,
+  SAMPLE_BATCH_RECORDS,
+  SAMPLE_SUPPORT_TICKETS,
+  PARTNER_GEOLOCATIONS
 } from './data/genericMedData';
 import {
   LayoutDashboard,
@@ -44,7 +57,9 @@ import {
   Store,
   Truck,
   Lock,
-  Search
+  Search,
+  RotateCcw,
+  LifeBuoy
 } from 'lucide-react';
 
 const GENERICMED_SCREENS: AppScreen[] = [
@@ -78,8 +93,8 @@ const GENERICMED_SCREENS: AppScreen[] = [
     features: [
       'Live fulfillment status timeline milestones (Created → Paid → Dispensed → Delivered)',
       'PRD Persona B: One-click repeat reorder without repeating search',
-      'Delivery address and recipient tracking',
-      'Support case initiation for fulfillment issues'
+      'Live GPS fleet telemetry & Cold-Chain sensor monitoring (Phase 2)',
+      'Integrated dispute support and clinical consultation desk (Phase 2)'
     ],
     status: 'Ready'
   },
@@ -95,25 +110,25 @@ const GENERICMED_SCREENS: AppScreen[] = [
     features: [
       'Real-time medicine inventory stock and pack price updates',
       'Price freshness SLA tracking (<24h compliance per FR-PART-05)',
-      'Fulfillment order queue: Accept, Pack & Dispense, and Dispatch Courier',
-      'Drug license verification and partner rating metrics'
+      'Batch Expiry Radar & Cold-Chain Telemetry (<180d near-expiry alerts) (Phase 2)',
+      'Store financial growth analytics & SLA compliance metrics (Phase 2)'
     ],
     status: 'Ready'
   },
   {
     id: 'screen-admin-ops',
-    name: 'Marketplace Operations & Governance',
+    name: 'Admin Governance & Exceptions',
     role: 'admin',
     category: 'admin',
-    description: 'Central control plane for monitoring CQMO North Star metrics, resolving operational exceptions, and inspecting immutable audit logs.',
+    description: 'Operational exception resolution queue (stock/price mismatches), Section 18 audit ledger, and ranking algorithm configuration.',
     badge: 'SCR-04',
     imageUrl: 'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&w=1200&q=80',
     fallbackIcon: 'Lock',
     features: [
-      'North Star Metric: Completed Qualified Medicine Orders (CQMO) counter',
-      'Operational Exception Queue (Stock shortages, stale catalog alerts) (FR-ADM-04)',
-      'Immutable Section 18 Audit Log with correlation IDs and state transitions',
-      'Configurable Multi-Factor Ranking Weights model v1.4 (FR-CORE-06)'
+      'Operational Exception Queue resolution with state tracking (FR-ADM-01)',
+      'Section 18 immutable audit trail viewer with search and correlation tracing',
+      'Customer Support & Dispute Desk with automated refund authorization (Phase 2)',
+      'Patient Review compliance moderation under Drugs & Magic Remedies Act (Phase 2)'
     ],
     status: 'Ready'
   }
@@ -121,28 +136,22 @@ const GENERICMED_SCREENS: AppScreen[] = [
 
 const INITIAL_HOTLINKS: HotlinkAsset[] = [
   {
-    id: 'hl-para-pack',
+    id: 'hotlink-banner',
     url: 'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?auto=format&fit=crop&w=1200&q=80',
-    title: 'Paracetamol IP 500mg Blister Packaging',
+    title: 'Modern Clinical Tablets & Bio-Equivalent Blister Strip',
     screenTarget: 'screen-discovery',
-    timestamp: '10:14 AM',
-    status: 'active'
+    timestamp: '2026-09-08 10:15',
+    status: 'active',
+    dimensions: '1200x800'
   },
   {
-    id: 'hl-pharmacy-store',
+    id: 'hotlink-partner',
     url: 'https://images.unsplash.com/photo-1587854692152-cbe660dbde88?auto=format&fit=crop&w=1200&q=80',
-    title: 'MedPlus Licensed Chemist Pharmacy Hub',
+    title: 'Verified Licensed Pharmacy Chemist Storefront',
     screenTarget: 'screen-partner-store',
-    timestamp: '09:45 AM',
-    status: 'active'
-  },
-  {
-    id: 'hl-delivery-dispatch',
-    url: 'https://images.unsplash.com/photo-1576602976047-174e57a47881?auto=format&fit=crop&w=1200&q=80',
-    title: 'Express Courier Temperature-Controlled Dispatch',
-    screenTarget: 'screen-orders',
-    timestamp: '08:30 AM',
-    status: 'active'
+    timestamp: '2026-09-08 10:30',
+    status: 'active',
+    dimensions: '1200x800'
   }
 ];
 
@@ -152,7 +161,7 @@ export function App() {
   const [activeScreenId, setActiveScreenId] = useState<string>('screen-discovery');
   const [hotlinks, setHotlinks] = useState<HotlinkAsset[]>(INITIAL_HOTLINKS);
 
-  // genericMed domain state
+  // Core Marketplace Domain State
   const [products] = useState<CanonicalProduct[]>(CANONICAL_PRODUCTS);
   const [listings, setListings] = useState<ProductListing[]>(PRODUCT_LISTINGS);
   const [cart, setCart] = useState<CartItem[]>([]);
@@ -160,117 +169,96 @@ export function App() {
   const [auditLogs, setAuditLogs] = useState<AuditRecord[]>(INITIAL_AUDIT_LOGS);
   const [exceptions, setExceptions] = useState<OperationalException[]>(INITIAL_EXCEPTIONS);
 
-  // Phase 1 MVP: User Profile & Auth state
+  // Phase 1 MVP State: User Profiles & Prescriptions
   const [userProfile, setUserProfile] = useState<UserProfile>(DEFAULT_USER_PROFILE);
-  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
-
-  // Phase 1 MVP: Prescriptions state
   const [prescriptions, setPrescriptions] = useState<PrescriptionRecord[]>(SAMPLE_PRESCRIPTIONS);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [notifications, setNotifications] = useState<NotificationMessage[]>([]);
 
-  // Phase 1 MVP: Transactional Notifications (SMS / WhatsApp)
-  const [notifications, setNotifications] = useState<NotificationMessage[]>([
-    {
-      id: 'notif-welcome',
-      type: 'sms',
-      recipient: DEFAULT_USER_PROFILE.phone,
-      title: 'Welcome to genericMed',
-      body: 'Verified generic medicine discovery enabled. Save up to 80% on chronic maintenance prescriptions.',
-      timestamp: 'Just now',
-      status: 'delivered'
-    }
-  ]);
+  // Phase 2 State: Subscriptions, Reviews, Batches, Support Tickets
+  const [subscriptions, setSubscriptions] = useState<ChronicSubscription[]>(SAMPLE_SUBSCRIPTIONS);
+  const [reviews, setReviews] = useState<ProductReview[]>(SAMPLE_REVIEWS);
+  const [batchRecords, setBatchRecords] = useState<MedicineBatchRecord[]>(SAMPLE_BATCH_RECORDS);
+  const [supportTickets, setSupportTickets] = useState<SupportTicket[]>(SAMPLE_SUPPORT_TICKETS);
 
-  const handleDismissNotification = (id: string) => {
-    setNotifications(prev => prev.filter(n => n.id !== id));
-  };
-
-  const handleSwitchRole = (role: AppUserRole) => {
-    setUserProfile(prev => ({ ...prev, role }));
-    if (role === 'customer') setActiveScreenId('screen-discovery');
-    if (role === 'partner') setActiveScreenId('screen-partner-store');
-    if (role === 'admin') setActiveScreenId('screen-admin-ops');
-  };
-
-  const handleUploadPrescription = (rx: PrescriptionRecord) => {
-    setPrescriptions(prev => [rx, ...prev.filter(p => p.id !== rx.id)]);
-    handleAppendAudit({
-      actorId: userProfile.id,
-      actorRole: 'Customer',
-      actionType: 'PRESCRIPTION_VERIFIED_AI',
-      entityType: 'Prescription',
-      entityId: rx.id,
-      newState: 'verified',
-      reason: `Google GenAI Vision verified doctor ${rx.doctorName} (${rx.doctorRegNumber}) with ${rx.confidenceScore}% confidence.`,
-      correlationId: `corr-rx-${Date.now().toString().slice(-6)}`,
-      sourceContext: 'AI Prescription Scanner'
-    });
-  };
-
-  const handlePaymentFailure = (errorMsg: string, session: PaymentSession) => {
-    const exceptionId = `EXC-${Math.floor(200 + Math.random() * 800)}`;
-    const newException: OperationalException = {
-      id: exceptionId,
-      type: 'payment_mismatch',
-      title: 'Banking Gateway Timeout / Auth Decline',
-      description: `Customer attempted payment of ₹${session.amount.toFixed(2)} via ${session.provider} (Idempotency: ${session.idempotencyKey}), but transaction failed: ${errorMsg}`,
-      entityId: session.transactionRef,
-      severity: 'medium',
-      status: 'open',
-      timestamp: 'Just now',
-      resolutionOptions: [
-        'Allow customer one-click retry with alternate payment method',
-        'Verify gateway webhook logs for late settlement callback',
-        'Release temporary stock reservation locks'
-      ]
-    };
-    setExceptions(prev => [newException, ...prev]);
-
-    handleAppendAudit({
-      actorId: userProfile.id,
-      actorRole: 'Customer',
-      actionType: 'PAYMENT_FAILED',
-      entityType: 'Payment Session',
-      entityId: session.transactionRef,
-      previousState: 'initiated',
-      newState: 'failed',
-      reason: `Payment error: ${errorMsg}. Idempotency key: ${session.idempotencyKey}`,
-      correlationId: session.idempotencyKey,
-      sourceContext: 'Payment Gateway Integration'
-    });
-  };
+  // Phase 2 Modals Visibility
+  const [isSubscriptionModalOpen, setIsSubscriptionModalOpen] = useState(false);
+  const [isRouteTrackerOpen, setIsRouteTrackerOpen] = useState(false);
+  const [selectedRouteOrder, setSelectedRouteOrder] = useState<OrderRecord | null>(null);
+  const [isSupportModalOpen, setIsSupportModalOpen] = useState(false);
+  const [supportInitialOrderId, setSupportInitialOrderId] = useState<string>('');
 
   // Cart operations
   const handleAddToCart = (listing: ProductListing, canonicalProduct: CanonicalProduct) => {
     setCart(prev => {
-      const existing = prev.find(i => i.listingId === listing.id);
+      const existing = prev.find(item => item.listingId === listing.id);
       if (existing) {
-        return prev.map(i => i.listingId === listing.id ? { ...i, quantity: i.quantity + 1 } : i);
+        return prev.map(item =>
+          item.listingId === listing.id
+            ? { ...item, quantity: item.quantity + 1 }
+            : item
+        );
       }
       return [...prev, { listingId: listing.id, listing, canonicalProduct, quantity: 1 }];
     });
   };
 
   const handleUpdateCartQty = (listingId: string, delta: number) => {
-    setCart(prev => {
-      return prev.map(item => {
-        if (item.listingId === listingId) {
-          const newQty = item.quantity + delta;
-          return newQty > 0 ? { ...item, quantity: newQty } : null;
-        }
-        return item;
-      }).filter(Boolean) as CartItem[];
-    });
+    setCart(prev =>
+      prev
+        .map(item => {
+          if (item.listingId === listingId) {
+            const newQty = item.quantity + delta;
+            return newQty > 0 ? { ...item, quantity: newQty } : null;
+          }
+          return item;
+        })
+        .filter(Boolean) as CartItem[]
+    );
   };
 
   const handleRemoveFromCart = (listingId: string) => {
-    setCart(prev => prev.filter(i => i.listingId !== listingId));
+    setCart(prev => prev.filter(item => item.listingId !== listingId));
   };
 
   const handleClearCart = () => {
     setCart([]);
   };
 
-  // Order creation (FR-ORDER-01, CQMO)
+  // Upload prescription
+  const handleUploadPrescription = (rx: PrescriptionRecord) => {
+    setPrescriptions(prev => [rx, ...prev]);
+    setUserProfile(prev => ({
+      ...prev,
+      activePrescriptionIds: [rx.id, ...prev.activePrescriptionIds]
+    }));
+
+    handleAppendAudit({
+      actorId: userProfile.id,
+      actorRole: 'Customer',
+      actionType: 'PRESCRIPTION_UPLOAD_AND_OCR_VERIFY',
+      entityType: 'PrescriptionRecord',
+      entityId: rx.id,
+      newState: rx.status,
+      reason: `Prescription OCR matched Doctor ${rx.doctorName} (Reg #${rx.doctorRegNumber}) with active clinical salts.`,
+      correlationId: `corr-rx-${Date.now().toString().slice(-6)}`,
+      sourceContext: 'Prescription AI OCR Scanner'
+    });
+  };
+
+  // Switch role
+  const handleSwitchRole = (newRole: AppUserRole) => {
+    setUserProfile(prev => ({ ...prev, role: newRole }));
+    if (newRole === 'partner') {
+      setActiveScreenId('screen-partner-store');
+    } else if (newRole === 'admin') {
+      setActiveScreenId('screen-admin-ops');
+    } else {
+      setActiveScreenId('screen-discovery');
+    }
+  };
+
+  // Order Placement
   const handlePlaceOrder = (
     customerName: string,
     customerEmail: string,
@@ -278,9 +266,9 @@ export function App() {
     method?: string,
     idempotencyKey?: string
   ): OrderRecord => {
-    const total = cart.reduce((sum, item) => sum + (item.listing.packPrice * item.quantity), 0);
-    const orderId = `ORD-2026-${Math.floor(1000 + Math.random() * 9000)}`;
-    const deliveryPin = Math.floor(1000 + Math.random() * 9000).toString();
+    const total = cart.reduce((sum, i) => sum + i.listing.packPrice * i.quantity, 0);
+    const orderId = `ORD-${Math.floor(10000 + Math.random() * 90000)}`;
+    const deliveryPin = `${Math.floor(1000 + Math.random() * 9000)}`;
 
     const newOrder: OrderRecord = {
       id: orderId,
@@ -293,38 +281,36 @@ export function App() {
       createdAt: 'Just now',
       deliveryAddress: address,
       deliveryPin,
-      paymentMethod: method || 'Razorpay / UPI',
+      paymentMethod: method || 'UPI Instant',
       idempotencyKey: idempotencyKey || `idemp-${Date.now()}`,
       trackingTimeline: [
-        { status: 'Order Created & Constraints Validated (FR-ORDER-01)', timestamp: 'Just now', completed: true },
-        { status: `Payment Reconciled via ${method || 'Gateway'}`, timestamp: 'Just now', completed: true },
-        { status: 'Fulfillment Order Transmitted to Partner Chemist', timestamp: 'In progress', completed: false },
-        { status: 'Dispensed & Quality Sealed by Pharmacist', timestamp: 'Pending', completed: false },
-        { status: 'Out for Express Delivery', timestamp: 'Pending', completed: false },
-        { status: `Delivered to Customer (Handover PIN: ${deliveryPin})`, timestamp: 'Expected in 45 mins', completed: false }
+        { status: 'Order Created & Payment Verified', timestamp: 'Just now', completed: true },
+        { status: 'Transmitted to Partner Chemist for Dispensing', timestamp: 'Just now', completed: true },
+        { status: 'Out for Express Delivery', timestamp: 'Est. in 15 mins', completed: false },
+        { status: 'Delivered with Contactless Security PIN', timestamp: 'Pending', completed: false }
       ]
     };
 
     setOrders(prev => [newOrder, ...prev]);
     setCart([]);
 
-    // Dispatch Simulated SMS Notification (PRD FR-NOTIF-01)
-    const smsAlert: NotificationMessage = {
-      id: `notif-${Date.now()}`,
+    // Trigger simulated SMS confirmation
+    const newSms: NotificationMessage = {
+      id: `sms-${Date.now()}`,
       type: 'sms',
       recipient: userProfile.phone,
-      title: `Order #${orderId} Confirmed & Paid`,
-      body: `genericMed: Order #${orderId} confirmed (₹${total.toFixed(2)}). Handover PIN: ${deliveryPin}. Chemist is packing your medicine.`,
+      title: 'Order Confirmed (Payment Reconciled)',
+      body: `Your genericMed order #${orderId} of ₹${total.toFixed(2)} is verified. Fulfilling via local pharmacy partner. Handover PIN: ${deliveryPin}.`,
       timestamp: 'Just now',
       status: 'delivered',
       orderId
     };
-    setNotifications(prev => [smsAlert, ...prev]);
+    setNotifications(prev => [newSms, ...prev]);
 
-    // Simulated subsequent WhatsApp dispatch alert
+    // Delayed courier dispatch update
     setTimeout(() => {
       const waAlert: NotificationMessage = {
-        id: `notif-wa-${Date.now()}`,
+        id: `wa-${Date.now()}`,
         type: 'whatsapp',
         recipient: userProfile.phone,
         title: 'Package Dispatched by Chemist',
@@ -352,7 +338,39 @@ export function App() {
     return newOrder;
   };
 
-  // One-click Reorder (Persona B)
+  const handlePaymentFailure = (errorMsg: string, session: PaymentSession) => {
+    const excId = `EXC-${Math.floor(200 + Math.random() * 800)}`;
+    const newExc: OperationalException = {
+      id: excId,
+      type: 'payment_mismatch',
+      title: 'Payment Gateway Settlement Failure',
+      description: `Payment intent of ₹${session.amount.toFixed(2)} failed via ${session.provider}. Reason: ${errorMsg}`,
+      entityId: session.transactionRef,
+      severity: 'critical',
+      status: 'open',
+      timestamp: 'Just now',
+      resolutionOptions: ['Retry Settlement', 'Void Hold', 'Notify Customer']
+    };
+    setExceptions(prev => [newExc, ...prev]);
+
+    handleAppendAudit({
+      actorId: 'gateway-webhook',
+      actorRole: 'System Worker',
+      actionType: 'PAYMENT_TRANSACTION_FAILED',
+      entityType: 'PaymentSession',
+      entityId: session.transactionRef,
+      newState: 'failed',
+      reason: `Gateway error: ${errorMsg}. Logged operational exception #${excId}.`,
+      correlationId: session.idempotencyKey,
+      sourceContext: 'External Payment Gateway'
+    });
+  };
+
+  const handleDismissNotification = (id: string) => {
+    setNotifications(prev => prev.filter(n => n.id !== id));
+  };
+
+  // Reorder (Persona B)
   const handleReorder = (order: OrderRecord) => {
     order.items.forEach(item => {
       handleAddToCart(item.listing, item.canonicalProduct);
@@ -442,6 +460,276 @@ export function App() {
     setAuditLogs(prev => [newRecord, ...prev]);
   };
 
+  // Phase 2: Chronic Subscriptions Handlers
+  const handleToggleSubscriptionStatus = (subscriptionId: string) => {
+    setSubscriptions(prev => prev.map(s => {
+      if (s.id === subscriptionId) {
+        const nextStatus = s.status === 'active' ? 'paused' : 'active';
+        handleAppendAudit({
+          actorId: userProfile.id,
+          actorRole: 'Customer',
+          actionType: 'SUBSCRIPTION_STATUS_TOGGLE',
+          entityType: 'ChronicSubscription',
+          entityId: subscriptionId,
+          previousState: s.status,
+          newState: nextStatus,
+          reason: `Customer toggled subscription status to ${nextStatus}.`,
+          correlationId: `corr-sub-${Date.now().toString().slice(-6)}`,
+          sourceContext: 'Subscription Manager'
+        });
+        return { ...s, status: nextStatus };
+      }
+      return s;
+    }));
+  };
+
+  const handleChangeSubscriptionInterval = (subscriptionId: string, intervalDays: SubscriptionIntervalDays) => {
+    setSubscriptions(prev => prev.map(s => {
+      if (s.id === subscriptionId) {
+        handleAppendAudit({
+          actorId: userProfile.id,
+          actorRole: 'Customer',
+          actionType: 'SUBSCRIPTION_INTERVAL_CHANGE',
+          entityType: 'ChronicSubscription',
+          entityId: subscriptionId,
+          previousState: `${s.intervalDays} days`,
+          newState: `${intervalDays} days`,
+          reason: `Refill schedule adjusted to every ${intervalDays} days.`,
+          correlationId: `corr-sub-${Date.now().toString().slice(-6)}`,
+          sourceContext: 'Subscription Manager'
+        });
+        return { ...s, intervalDays };
+      }
+      return s;
+    }));
+  };
+
+  const handleTriggerSubscriptionRefill = (sub: ChronicSubscription) => {
+    const orderId = `ORD-SUB-${Math.floor(10000 + Math.random() * 90000)}`;
+    const newOrder: OrderRecord = {
+      id: orderId,
+      customerName: userProfile.name,
+      customerEmail: userProfile.email,
+      items: [{ listingId: sub.listing.id, listing: sub.listing, canonicalProduct: sub.canonicalProduct, quantity: sub.quantity }],
+      totalAmount: sub.listing.packPrice * sub.quantity * 0.95, // 5% subscriber savings
+      status: 'Paid/Confirmed',
+      paymentStatus: 'Verified Paid',
+      createdAt: 'Just now',
+      deliveryAddress: sub.deliveryAddress,
+      deliveryPin: `${Math.floor(1000 + Math.random() * 9000)}`,
+      paymentMethod: sub.autoPayMethod,
+      idempotencyKey: `idemp-sub-refill-${Date.now()}`,
+      trackingTimeline: [
+        { status: 'Auto-Refill Pre-Authorized & Paid', timestamp: 'Just now', completed: true },
+        { status: 'Transmitted to Partner for Urgent Packing', timestamp: 'Just now', completed: true },
+        { status: 'Out for Express Delivery', timestamp: 'Est. 20 mins', completed: false },
+        { status: 'Delivered with Contactless Security PIN', timestamp: 'Pending', completed: false }
+      ]
+    };
+
+    setOrders(prev => [newOrder, ...prev]);
+    setSubscriptions(prev => prev.map(s => s.id === sub.id ? { ...s, refillCount: s.refillCount + 1 } : s));
+
+    const alertMsg: NotificationMessage = {
+      id: `toast-${Date.now()}`,
+      type: 'whatsapp',
+      recipient: userProfile.phone,
+      title: 'Chronic Refill Dispatched (5% Saved)',
+      body: `Refill order #${orderId} for ${sub.canonicalProduct.canonicalName} has been pre-authorized via ${sub.autoPayMethod} and dispatched!`,
+      timestamp: 'Just now',
+      status: 'delivered',
+      orderId
+    };
+    setNotifications(prev => [alertMsg, ...prev]);
+
+    handleAppendAudit({
+      actorId: 'scheduler-cron',
+      actorRole: 'System Worker',
+      actionType: 'CHRONIC_REFILL_DISPATCHED',
+      entityType: 'Order',
+      entityId: orderId,
+      newState: 'Paid/Confirmed',
+      reason: `Automated ${sub.intervalDays}-day refill cycle executed with pre-authorization token.`,
+      correlationId: `corr-subrefill-${Date.now().toString().slice(-6)}`,
+      sourceContext: 'Recurring Scheduler'
+    });
+  };
+
+  const handleCreateSubscription = (
+    product: CanonicalProduct,
+    listing: ProductListing,
+    interval: SubscriptionIntervalDays
+  ) => {
+    const subId = `sub-${Date.now().toString().slice(-6)}`;
+    const unitSavings = Math.max(0, product.brandPriceRef - listing.normalizedUnitPrice);
+    const newSub: ChronicSubscription = {
+      id: subId,
+      userId: userProfile.id,
+      canonicalProduct: product,
+      listing,
+      quantity: 2,
+      intervalDays: interval,
+      startDate: 'Today',
+      nextRefillDate: `In ${interval} days`,
+      status: 'active',
+      deliveryAddress: userProfile.addresses[0]?.street || 'Default Address',
+      monthlySavings: parseFloat((unitSavings * 60).toFixed(2)),
+      autoPayMethod: 'UPI AutoPay',
+      refillCount: 0
+    };
+
+    setSubscriptions(prev => [newSub, ...prev]);
+
+    const notif: NotificationMessage = {
+      id: `sub-toast-${Date.now()}`,
+      type: 'sms',
+      recipient: userProfile.phone,
+      title: 'Subscription Enrolled!',
+      body: `Enrolled in recurring ${interval}-day delivery for ${product.canonicalName} with an extra 5% discount.`,
+      timestamp: 'Just now',
+      status: 'delivered'
+    };
+    setNotifications(prev => [notif, ...prev]);
+
+    handleAppendAudit({
+      actorId: userProfile.id,
+      actorRole: 'Customer',
+      actionType: 'SUBSCRIPTION_ENROLLED',
+      entityType: 'ChronicSubscription',
+      entityId: subId,
+      newState: 'active',
+      reason: `Enrolled in recurring ${interval}-day delivery. Projected annual savings: ₹${(newSub.monthlySavings * 12).toFixed(0)}.`,
+      correlationId: `corr-newsub-${Date.now().toString().slice(-6)}`,
+      sourceContext: 'Product Detail Monograph'
+    });
+  };
+
+  // Phase 2: Patient Reviews Handlers
+  const handleSubmitReview = (reviewData: Omit<ProductReview, 'id' | 'date' | 'helpfulCount' | 'status'>) => {
+    const reviewId = `rev-${Date.now().toString().slice(-6)}`;
+    const newReview: ProductReview = {
+      ...reviewData,
+      id: reviewId,
+      date: 'Today',
+      helpfulCount: 0,
+      status: 'approved',
+      pharmacistVerifiedNote: 'Verified bio-equivalence study compliant with Indian Pharmacopoeia standard.'
+    };
+
+    setReviews(prev => [newReview, ...prev]);
+
+    handleAppendAudit({
+      actorId: userProfile.id,
+      actorRole: 'Customer',
+      actionType: 'PATIENT_REVIEW_SUBMITTED',
+      entityType: 'ProductReview',
+      entityId: reviewId,
+      newState: 'approved',
+      reason: `Patient verified purchase review submitted for ${reviewData.productName}.`,
+      correlationId: `corr-rev-${Date.now().toString().slice(-6)}`,
+      sourceContext: 'Verified Review Modal'
+    });
+  };
+
+  const handleModerateReview = (reviewId: string, action: 'approved' | 'flagged' | 'hidden') => {
+    setReviews(prev => prev.map(r => r.id === reviewId ? { ...r, status: action } : r));
+  };
+
+  // Phase 2: Support Ticket Handlers
+  const handleCreateSupportTicket = (
+    ticketData: Omit<SupportTicket, 'id' | 'createdAt' | 'messages'>,
+    initialMessage: string
+  ) => {
+    const ticketId = `CAS-${Math.floor(1000 + Math.random() * 9000)}`;
+    const newTicket: SupportTicket = {
+      ...ticketData,
+      id: ticketId,
+      createdAt: 'Just now',
+      messages: [
+        {
+          id: `msg-${Date.now()}`,
+          sender: 'customer',
+          senderName: userProfile.name,
+          text: initialMessage,
+          timestamp: 'Just now'
+        }
+      ]
+    };
+
+    setSupportTickets(prev => [newTicket, ...prev]);
+
+    // Simulated automated response from Pharmacist / Ops lead
+    setTimeout(() => {
+      const replyMsg = {
+        id: `reply-${Date.now()}`,
+        sender: 'pharmacist' as const,
+        senderName: 'Dr. Anita Desai, Lead Pharmacist (Reg #5102)',
+        text: `Thank you for reaching out regarding Order #${newTicket.orderId}. I am actively investigating this case and will assist you immediately.`,
+        timestamp: 'Just now'
+      };
+      setSupportTickets(prev => prev.map(t => t.id === ticketId ? { ...t, messages: [...t.messages, replyMsg] } : t));
+    }, 2000);
+
+    handleAppendAudit({
+      actorId: userProfile.id,
+      actorRole: 'Customer',
+      actionType: 'SUPPORT_TICKET_OPENED',
+      entityType: 'SupportTicket',
+      entityId: ticketId,
+      newState: 'Open',
+      reason: `Customer opened inquiry: "${ticketData.subject}" for Order ${ticketData.orderId}.`,
+      correlationId: `corr-tkt-${Date.now().toString().slice(-6)}`,
+      sourceContext: 'Customer Support Desk'
+    });
+  };
+
+  const handleReplySupportTicket = (ticketId: string, text: string) => {
+    setSupportTickets(prev => prev.map(t => {
+      if (t.id === ticketId) {
+        const newMsg = {
+          id: `msg-${Date.now()}`,
+          sender: 'customer' as const,
+          senderName: userProfile.name,
+          text,
+          timestamp: 'Just now'
+        };
+        return { ...t, messages: [...t.messages, newMsg] };
+      }
+      return t;
+    }));
+  };
+
+  const handleResolveSupportTicket = (ticketId: string, resolutionNote: string, refundAmount?: number) => {
+    setSupportTickets(prev => prev.map(t => {
+      if (t.id === ticketId) {
+        return {
+          ...t,
+          status: 'Resolved',
+          resolvedAt: 'Just now',
+          resolutionNote,
+          refundIssued: refundAmount
+        };
+      }
+      return t;
+    }));
+  };
+
+  // Phase 2: Batch status update
+  const handleUpdateBatchStatus = (batchId: string, status: MedicineBatchRecord['status']) => {
+    setBatchRecords(prev => prev.map(b => b.id === batchId ? { ...b, status } : b));
+    handleAppendAudit({
+      actorId: 'partner-pharmacist',
+      actorRole: 'Partner Staff',
+      actionType: 'BATCH_STATUS_CHANGE',
+      entityType: 'MedicineBatchRecord',
+      entityId: batchId,
+      newState: status,
+      reason: `Batch status changed to ${status} following regulatory cold-chain inspection.`,
+      correlationId: `corr-batch-${Date.now().toString().slice(-6)}`,
+      sourceContext: 'Partner Batch Radar'
+    });
+  };
+
   // Hotlink Management
   const handleAddHotlink = (asset: HotlinkAsset) => {
     setHotlinks(prev => [asset, ...prev]);
@@ -471,7 +759,7 @@ export function App() {
                   genericMed
                 </span>
                 <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-800 border border-emerald-200">
-                  PRD Aligned
+                  Phase 2 Active
                 </span>
               </div>
               <p className="text-[11px] text-zinc-500 hidden sm:block">
@@ -570,6 +858,29 @@ export function App() {
             onUpdateOrderStatus={handleUpdateOrderStatus}
             onResolveException={handleResolveException}
             onAppendAudit={handleAppendAudit}
+            // Phase 2 props
+            subscriptions={subscriptions}
+            reviews={reviews}
+            batchRecords={batchRecords}
+            tickets={supportTickets}
+            onOpenSubscriptions={() => setIsSubscriptionModalOpen(true)}
+            onOpenRouteTracker={(order) => {
+              setSelectedRouteOrder(order);
+              setIsRouteTrackerOpen(true);
+            }}
+            onOpenSupportTicket={(orderId) => {
+              setSupportInitialOrderId(orderId || orders[0]?.id || '');
+              setIsSupportModalOpen(true);
+            }}
+            onOpenProductReviews={(productId) => {
+              // Direct navigation to product reviews
+              setActiveScreenId('screen-discovery');
+            }}
+            onSubscribe={handleCreateSubscription}
+            onSubmitReview={handleSubmitReview}
+            onModerateReview={handleModerateReview}
+            onResolveTicket={handleResolveSupportTicket}
+            onUpdateBatchStatus={handleUpdateBatchStatus}
           />
         )}
 
@@ -605,6 +916,42 @@ export function App() {
         onSwitchRole={handleSwitchRole}
       />
 
+      {/* Phase 2: Chronic Subscription Manager Modal */}
+      <SubscriptionManagerModal
+        isOpen={isSubscriptionModalOpen}
+        onClose={() => setIsSubscriptionModalOpen(false)}
+        subscriptions={subscriptions}
+        onToggleStatus={handleToggleSubscriptionStatus}
+        onChangeInterval={handleChangeSubscriptionInterval}
+        onTriggerRefill={handleTriggerSubscriptionRefill}
+        onNavigateToDiscovery={() => {
+          setIsSubscriptionModalOpen(false);
+          setActiveScreenId('screen-discovery');
+          setActiveTab('app');
+        }}
+      />
+
+      {/* Phase 2: Live Route & Cold-Chain Telemetry Modal */}
+      {selectedRouteOrder && (
+        <LiveRouteTrackerModal
+          isOpen={isRouteTrackerOpen}
+          onClose={() => setIsRouteTrackerOpen(false)}
+          order={selectedRouteOrder}
+          partnerLocation={PARTNER_GEOLOCATIONS[selectedRouteOrder.items[0]?.listing.partnerId || 'partner-medplus']}
+        />
+      )}
+
+      {/* Phase 2: Customer Support & Dispute Desk Modal */}
+      <SupportTicketModal
+        isOpen={isSupportModalOpen}
+        onClose={() => setIsSupportModalOpen(false)}
+        tickets={supportTickets}
+        orders={orders}
+        onCreateTicket={handleCreateSupportTicket}
+        onReplyTicket={handleReplySupportTicket}
+        initialOrderId={supportInitialOrderId}
+      />
+
       {/* Simulated Transactional Notifications Container (PRD FR-NOTIF-01) */}
       <NotificationToastContainer
         notifications={notifications}
@@ -620,7 +967,7 @@ export function App() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-3">
           <div className="flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-            <span className="font-medium text-zinc-700">genericMed Marketplace Production Prototype</span>
+            <span className="font-medium text-zinc-700">genericMed Marketplace — Phase 2 Trust & Growth Live</span>
             <span>•</span>
             <span className="font-mono">PRD v0.1 Specification (8 Sep 2026)</span>
           </div>

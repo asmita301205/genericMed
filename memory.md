@@ -61,6 +61,12 @@ This document serves as the persistent memory, architectural index, and domain k
 | **Interactive 5-Tier Architecture** | Section 13 | **Completed** | Interactive diagram visualizing Client Portals, Edge Gateway, Domain Services, Storage Ledger, and External Integrations. |
 | **Complete 22-Section PRD Viewer** | Sections 1–22 | **Completed** | Structured reader with metadata overview, revision history, functional & non-functional requirements, and sign-off checklists. |
 | **Hotlink Asset Studio** | Auxiliary | **Completed** | Studio interface for managing, validating, and previewing high-resolution medicine and pharmacy photography assets. |
+| **Chronic Care Auto-Refills** | Phase 2 Growth | **Completed** | 30/60/90-day automated recurring delivery schedule for maintenance therapies (Metformin, Atorvastatin) with 5% extra discount, pause/resume, and pre-auth tokens. |
+| **Verified Patient Reviews & Moderation** | PRD Section 9.2 | **Completed** | Verified purchase gated review system with clinical condition tagging, helpful counters, and Admin regulatory compliance moderation queue. |
+| **Geospatial Fleet & Cold-Chain Telemetry**| PRD Section 11 | **Completed** | Real-time vector route simulation, dynamic ETA countdown, live IoT thermometer telemetry (2-8°C cold-chain or ambient), and 4-digit handover PIN. |
+| **Batch Expiry Radar & Quarantine** | Section 65 Drugs Act | **Completed** | Batch-level inventory tracking with near-expiry (<180d) and critical (<90d) flags, temperature monitoring, and 1-click administrative quarantine. |
+| **Customer Dispute & Support Desk** | FR-ORDER-05 / FR-ADM-02 | **Completed** | Integrated ticketing desk supporting delayed delivery, damaged goods, or prescription inquiries with live pharmacist chat and refund authorization. |
+| **Partner Growth Analytics & SLA Matrix** | Phase 2 Growth | **Completed** | Store GMV analytics, on-time SLA dispatch compliance (98.6%), repeat chronic patient retention (78%), and top-performing molecule breakdowns. |
 
 ---
 
@@ -68,11 +74,10 @@ This document serves as the persistent memory, architectural index, and domain k
 
 | Feature | Priority | Target Phase | Description |
 | :--- | :--- | :--- | :--- |
-| **Live Production Gateway Credentials** | P1 | Phase 1.2 | Bind live production merchant keys for Razorpay / Stripe and webhook receiver endpoint in cloud backend. |
-| **Geospatial Proximity Routing** | P1 | Phase 1.2 | Calculate real-time delivery ETA and courier distance using Google Maps Distance Matrix API. |
-| **Batch Expiry Inventory Tracking** | P1 | Phase 2.0 | Partner portal capability to track batch numbers and flag items nearing expiry (<6 months) per pharmaceutical regulations. |
-| **Chronic Subscription Refills** | P2 | Phase 2.0 | Automated 30/60/90-day subscription renewal with reminder notifications for diabetes and cardiovascular patients. |
-| **Tele-Consultation Prescription Renewal**| P2 | Phase 3.0 | In-app video consultation with licensed doctors for chronic patient prescription renewal. |
+| **Live Production Gateway Credentials** | P1 | Phase 2.1 | Bind live production merchant keys for Razorpay / Stripe and webhook receiver endpoint in cloud backend. |
+| **Tele-Consultation Prescription Renewal**| P1 | Phase 3.0 | In-app video consultation with licensed doctors for chronic patient prescription renewal. |
+| **National Pharmacy Network Integration** | P2 | Phase 3.0 | Automated B2B inventory sync with national pharmacy ERP chains (Apollo, MedPlus, Jan Aushadhi central warehouse). |
+| **Multi-Currency & Internationalization** | P2 | Phase 3.0 | Multi-currency pricing (USD, EUR, GBP) and localized language packs (Hindi, Tamil, Telugu, Bengali). |
 
 ---
 

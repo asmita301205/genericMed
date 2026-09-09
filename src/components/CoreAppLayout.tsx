@@ -10,7 +10,12 @@ import {
   OperationalException,
   UserProfile,
   PrescriptionRecord,
-  PaymentSession
+  PaymentSession,
+  ChronicSubscription,
+  ProductReview,
+  MedicineBatchRecord,
+  SupportTicket,
+  SubscriptionIntervalDays
 } from '../types';
 import { CustomerMarketplace } from './CustomerMarketplace';
 import { OrdersTracker } from './OrdersTracker';
@@ -36,7 +41,9 @@ import {
   User,
   Store,
   Lock,
-  Sparkles
+  Sparkles,
+  RotateCcw,
+  LifeBuoy
 } from 'lucide-react';
 
 interface CoreAppLayoutProps {
@@ -69,6 +76,20 @@ interface CoreAppLayoutProps {
   onUpdateOrderStatus: (orderId: string, newStatus: OrderRecord['status']) => void;
   onResolveException: (exceptionId: string, resolution: string) => void;
   onAppendAudit: (record: Omit<AuditRecord, 'id' | 'timestamp'>) => void;
+  // Phase 2 props
+  subscriptions?: ChronicSubscription[];
+  reviews?: ProductReview[];
+  batchRecords?: MedicineBatchRecord[];
+  tickets?: SupportTicket[];
+  onOpenSubscriptions?: () => void;
+  onOpenRouteTracker?: (order: OrderRecord) => void;
+  onOpenSupportTicket?: (orderId: string) => void;
+  onOpenProductReviews?: (productId: string) => void;
+  onSubscribe?: (product: CanonicalProduct, listing: ProductListing, interval: SubscriptionIntervalDays) => void;
+  onSubmitReview?: (review: Omit<ProductReview, 'id' | 'date' | 'helpfulCount' | 'status'>) => void;
+  onModerateReview?: (reviewId: string, action: 'approved' | 'flagged' | 'hidden') => void;
+  onResolveTicket?: (ticketId: string, resolutionNote: string, refundAmount?: number) => void;
+  onUpdateBatchStatus?: (batchId: string, status: MedicineBatchRecord['status']) => void;
 }
 
 export const CoreAppLayout: React.FC<CoreAppLayoutProps> = ({
@@ -101,6 +122,19 @@ export const CoreAppLayout: React.FC<CoreAppLayoutProps> = ({
   onUpdateOrderStatus,
   onResolveException,
   onAppendAudit,
+  subscriptions = [],
+  reviews = [],
+  batchRecords = [],
+  tickets = [],
+  onOpenSubscriptions,
+  onOpenRouteTracker,
+  onOpenSupportTicket,
+  onOpenProductReviews,
+  onSubscribe,
+  onSubmitReview,
+  onModerateReview,
+  onResolveTicket,
+  onUpdateBatchStatus,
 }) => {
   const [viewportMode, setViewportMode] = useState<'desktop' | 'tablet' | 'mobile'>('desktop');
   const [roleFilter, setRoleFilter] = useState<'all' | 'customer' | 'partner' | 'admin'>('all');
@@ -120,80 +154,95 @@ export const CoreAppLayout: React.FC<CoreAppLayoutProps> = ({
   };
 
   return (
-    <div id="core-app-layout-root" className="w-full max-w-7xl mx-auto space-y-6">
-      {/* Top Application Header Bar */}
-      <div id="app-header-strip" className="bg-white border border-zinc-200 rounded-xl p-5 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div id="core-layout-root" className="space-y-6">
+      {/* Top Banner & Control Deck */}
+      <div className="bg-white border border-zinc-200 rounded-2xl p-4 sm:p-6 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+        {/* Left: Active Screen Info */}
         <div className="space-y-1">
           <div className="flex items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200">
-              <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-              genericMed Interactive Application
+            <span className="font-mono text-xs font-semibold px-2.5 py-0.5 rounded-full bg-zinc-100 text-zinc-700 border border-zinc-200">
+              {activeScreen.badge}
             </span>
-            <span className="text-xs font-mono text-zinc-500 bg-zinc-100 px-2 py-0.5 rounded">
-              PRD v0.1 Specification Aligned
+            <span className={`text-xs font-semibold px-2 py-0.5 rounded-full capitalize ${
+              activeScreen.role === 'customer'
+                ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                : activeScreen.role === 'partner'
+                ? 'bg-indigo-50 text-indigo-700 border border-indigo-200'
+                : 'bg-rose-50 text-rose-700 border border-rose-200'
+            }`}>
+              {activeScreen.role} Workspace
             </span>
           </div>
-          <h1 className="text-2xl font-extrabold tracking-tight text-zinc-900">
+          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-zinc-900">
             {activeScreen.name}
-          </h1>
-          <p className="text-xs text-zinc-600">
+          </h2>
+          <p className="text-xs text-zinc-500 max-w-xl">
             {activeScreen.description}
           </p>
         </div>
 
-        {/* Viewport Mode Switcher & Navigation Shortcuts */}
-        <div className="flex flex-wrap items-center gap-3">
-          {/* Responsive Viewport Simulator */}
-          <div className="flex items-center bg-zinc-100 p-1 rounded-lg border border-zinc-200">
+        {/* Right: Actions & Tools */}
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+          {/* Viewport simulation switcher */}
+          <div className="inline-flex rounded-lg border border-zinc-200 bg-zinc-50 p-1 text-xs">
             <button
-              id="viewport-desktop-btn"
               onClick={() => setViewportMode('desktop')}
-              title="Desktop View (Full Width)"
-              className={`p-1.5 rounded text-xs flex items-center gap-1.5 transition-colors ${
-                viewportMode === 'desktop' ? 'bg-white text-zinc-900 shadow-xs font-medium' : 'text-zinc-600 hover:text-zinc-900'
+              className={`p-1.5 rounded-md transition-colors ${
+                viewportMode === 'desktop' ? 'bg-white text-zinc-900 shadow-xs' : 'text-zinc-500 hover:text-zinc-900'
               }`}
+              title="Desktop View"
             >
               <Monitor className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Desktop</span>
             </button>
             <button
-              id="viewport-tablet-btn"
               onClick={() => setViewportMode('tablet')}
-              title="Tablet View (768px)"
-              className={`p-1.5 rounded text-xs flex items-center gap-1.5 transition-colors ${
-                viewportMode === 'tablet' ? 'bg-white text-zinc-900 shadow-xs font-medium' : 'text-zinc-600 hover:text-zinc-900'
+              className={`p-1.5 rounded-md transition-colors ${
+                viewportMode === 'tablet' ? 'bg-white text-zinc-900 shadow-xs' : 'text-zinc-500 hover:text-zinc-900'
               }`}
+              title="Tablet View"
             >
               <Tablet className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Tablet</span>
             </button>
             <button
-              id="viewport-mobile-btn"
               onClick={() => setViewportMode('mobile')}
-              title="Mobile View (420px)"
-              className={`p-1.5 rounded text-xs flex items-center gap-1.5 transition-colors ${
-                viewportMode === 'mobile' ? 'bg-white text-zinc-900 shadow-xs font-medium' : 'text-zinc-600 hover:text-zinc-900'
+              className={`p-1.5 rounded-md transition-colors ${
+                viewportMode === 'mobile' ? 'bg-white text-zinc-900 shadow-xs' : 'text-zinc-500 hover:text-zinc-900'
               }`}
+              title="Mobile View"
             >
               <Smartphone className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Mobile</span>
             </button>
           </div>
 
-          <button
-            onClick={onOpenPrd}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-zinc-200 bg-white hover:bg-zinc-50 text-xs font-medium text-zinc-700 shadow-xs"
-          >
-            <FileText className="w-3.5 h-3.5 text-zinc-500" />
-            <span>PRD Specs</span>
-          </button>
-          <button
-            onClick={onOpenArchitecture}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-zinc-200 bg-white hover:bg-zinc-50 text-xs font-medium text-zinc-700 shadow-xs"
-          >
-            <Layers className="w-3.5 h-3.5 text-zinc-500" />
-            <span>Architecture</span>
-          </button>
+          {/* Chronic Subscriptions Quick Button (Phase 2) */}
+          {onOpenSubscriptions && (
+            <button
+              id="subscriptions-header-btn"
+              onClick={onOpenSubscriptions}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-blue-200 bg-blue-50 hover:bg-blue-100 text-xs font-semibold text-blue-900 shadow-xs transition-colors"
+            >
+              <RotateCcw className="w-3.5 h-3.5 text-blue-600" />
+              <span className="hidden sm:inline">Subscriptions</span>
+              <span className="text-[10px] font-mono px-1 py-0.2 rounded bg-blue-200/80 text-blue-800">
+                {subscriptions.length}
+              </span>
+            </button>
+          )}
+
+          {/* Support Desk Quick Button (Phase 2) */}
+          {onOpenSupportTicket && (
+            <button
+              id="support-header-btn"
+              onClick={() => onOpenSupportTicket('')}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-rose-200 bg-rose-50 hover:bg-rose-100 text-xs font-semibold text-rose-900 shadow-xs transition-colors"
+            >
+              <LifeBuoy className="w-3.5 h-3.5 text-rose-600" />
+              <span className="hidden sm:inline">Support</span>
+              <span className="text-[10px] font-mono px-1 py-0.2 rounded bg-rose-200/80 text-rose-800">
+                {tickets.filter(t => t.status !== 'Resolved').length}
+              </span>
+            </button>
+          )}
 
           {/* User Profile / Auth Trigger */}
           <button
@@ -284,6 +333,7 @@ export const CoreAppLayout: React.FC<CoreAppLayoutProps> = ({
             cart={cart}
             userProfile={userProfile}
             activePrescriptions={activePrescriptions}
+            reviews={reviews}
             onAddToCart={onAddToCart}
             onUpdateCartQty={onUpdateCartQty}
             onRemoveFromCart={onRemoveFromCart}
@@ -292,6 +342,9 @@ export const CoreAppLayout: React.FC<CoreAppLayoutProps> = ({
             onPaymentFailure={onPaymentFailure}
             onUploadPrescription={onUploadPrescription}
             onNavigateToOrders={() => onSelectScreen('screen-orders')}
+            onOpenSubscriptions={onOpenSubscriptions}
+            onSubscribe={onSubscribe}
+            onSubmitReview={onSubmitReview}
           />
         )}
 
@@ -300,6 +353,10 @@ export const CoreAppLayout: React.FC<CoreAppLayoutProps> = ({
             orders={orders}
             onReorder={onReorder}
             onNavigateToDiscovery={() => onSelectScreen('screen-discovery')}
+            onOpenRouteTracker={onOpenRouteTracker}
+            onOpenSubscriptions={onOpenSubscriptions}
+            onOpenSupportTicket={onOpenSupportTicket}
+            onOpenProductReviews={onOpenProductReviews}
           />
         )}
 
@@ -308,9 +365,11 @@ export const CoreAppLayout: React.FC<CoreAppLayoutProps> = ({
             listings={listings}
             products={products}
             orders={orders}
+            batchRecords={batchRecords}
             onUpdateListingStock={onUpdateListingStock}
             onUpdateListingPrice={onUpdateListingPrice}
             onUpdateOrderStatus={onUpdateOrderStatus}
+            onUpdateBatchStatus={onUpdateBatchStatus}
           />
         )}
 
@@ -318,8 +377,12 @@ export const CoreAppLayout: React.FC<CoreAppLayoutProps> = ({
           <AdminOperationsPortal
             auditLogs={auditLogs}
             exceptions={exceptions}
+            tickets={tickets}
+            reviews={reviews}
             onResolveException={onResolveException}
             onAppendAudit={onAppendAudit}
+            onResolveTicket={onResolveTicket}
+            onModerateReview={onModerateReview}
           />
         )}
       </div>

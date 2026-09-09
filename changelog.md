@@ -11,6 +11,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.0.0-phase2] - 2026-09-09
+
+### Added
+- **Chronic Care Auto-Refills (Persona B)**:
+  - Added `SubscriptionManagerModal` component for managing 30, 60, and 90-day recurring delivery intervals with 5% extra recurring discounts.
+  - Implemented 1-click pause, resume, interval adjustment, and "Instant Refill Now" dispatch triggers with pre-authorized UPI AutoPay tokens.
+  - Integrated "Subscribe & Save" enrollment option in `ProductDetailModal` and quick access from the global header.
+- **Verified Patient Reviews & Regulatory Claim Moderation**:
+  - Added review intake and star-rating breakdown in `ProductDetailModal` with verified purchase gating and condition-specific badges.
+  - Built an Admin Review Moderation Queue in `AdminOperationsPortal` to review submissions and prevent unsubstantiated therapeutic claims per the Drugs & Magic Remedies Act.
+  - Integrated review scores into the Model v1.4 Explainable Multi-Factor Ranking Engine ($S_{\text{feedback}}$).
+- **Geospatial Dynamic Dispatch & Cold-Chain Telemetry**:
+  - Added `LiveRouteTrackerModal` with interactive vector polyline map simulation, dynamic ETA countdown, and real-time vehicle speedometer.
+  - Integrated IoT digital thermometer telemetry monitor (2°C–8°C for cold-chain medications like insulin, 15°C–25°C ambient) with GDP compliance status.
+  - Enforced 4-digit handover PIN for secure contactless delivery.
+- **Partner Batch Expiry Radar & Pharmacovigilance Quarantine**:
+  - Added "Batch Expiry & Cold Chain Radar" tab in `PartnerPortal` tracking batch numbers, manufacturing/expiry dates, and expiration countdowns (<180d near-expiry warning, <90d critical).
+  - One-click administrative quarantine workflow that immediately revokes sellable inventory and commits to the Section 18 Audit Log.
+- **Customer Support & Dispute Desk**:
+  - Added `SupportTicketModal` for reporting delivery delays, damaged packaging, dosage queries, and refund requests with live pharmacist chat.
+  - Added Customer Support Desk tab in `AdminOperationsPortal` to review cases, issue partial/full refunds, and log resolution rationale to the audit trail.
+- **Partner Growth Analytics & SLA Matrix**:
+  - Added performance analytics tab in `PartnerPortal` covering Gross Merchandise Value (GMV), 98.6% on-time dispatch SLA adherence, and chronic patient retention rates.
+
+### Changed
+- Promoted application state to Phase 2, binding subscriptions, reviews, batch inventory, and support tickets into the core React application shell.
+- Updated Section 18 Audit Log to record subscription refills, dispute ticket resolutions, review moderation actions, and batch quarantine events.
+
+---
+
 ## [1.0.0-phase1] - 2026-09-09
 
 ### Added

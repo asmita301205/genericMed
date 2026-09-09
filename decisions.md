@@ -284,3 +284,131 @@ Implement a **Typed In-Memory State Architecture**:
 - Fast development cycle (`npm run dev`).
 - Clean separation between presentation components and domain contracts.
 - Seamless transition path to REST/GraphQL API integration.
+
+---
+
+## ADR-009: Chronic Subscription Auto-Refill Scheduling & Predictive Pre-Authorization
+
+- **Date**: 2026-09-09
+- **Status**: Approved
+- **Deciders**: Product Lead, Pharmacy Operations Lead, System Architect
+
+### Context / Problem
+Chronic maintenance patients (Persona B: Diabetes, Hypertension, Dyslipidemia) require uninterrupted, predictable monthly supply of generic therapies. Requiring manual monthly search and checkout induces friction, prescription lapses, and adherence failure.
+
+### Decision Taken
+Implement an automated **Chronic Care Auto-Refill Engine**:
+- Support 30, 60, and 90-day recurring delivery intervals with an extra 5% subscriber cost benefit.
+- Enforce pre-authorized payment settlement tokens (UPI AutoPay / Card Vault).
+- Automatically trigger 24-hour pre-dispatch stock count and price revalidation against fulfilling partner pharmacies.
+- Provide instant pause, interval adjustment, and on-demand "Instant Refill Now" triggers with automated Section 18 audit logging.
+
+### Reasoning
+- Maximizes North Star Completed Qualified Medicine Orders (CQMO) through predictable repeat transactions.
+- Reduces patient out-of-pocket healthcare expenses through recurring volume economies.
+- Prevents clinical stockout emergencies for life-critical maintenance medications.
+
+### Alternatives Considered
+- **Push Notification Reminders Only**: Relies on patient manual re-order; high drop-off rates and missed refills.
+- **Fixed 30-Day Only Schedule**: Incompatible with 60-day or 90-day chronic physician prescriptions.
+
+### Impact on Project
+- Introduced `ChronicSubscription` model in `src/types.ts`.
+- Created `SubscriptionManagerModal.tsx` for complete patient lifecycle control.
+- Integrated "Subscribe & Save" enrollment directly in `ProductDetailModal.tsx` and `CoreAppLayout.tsx`.
+
+---
+
+## ADR-010: Patient Review Integrity & Regulatory Medical Claim Moderation
+
+- **Date**: 2026-09-09
+- **Status**: Approved
+- **Deciders**: Chief Compliance Officer, Product Manager, Governance Lead
+
+### Context / Problem
+Patient reviews are vital for demystifying generic drug efficacy and driving adoption, but pharmaceutical regulations (Drugs & Magic Remedies Act, Section 9.2 PRD) strictly prohibit unsubstantiated medical claims, off-label endorsements, or unmonitored dosage modifications.
+
+### Decision Taken
+Implement a **Verified Purchase Gated & Moderated Clinical Review System**:
+- Only authenticated customers with completed, verified delivery records can submit reviews.
+- Structured review intake capturing specific condition treated, clinical efficacy tags, and mandatory medical disclaimers.
+- Reviews enter an **Admin Governance Review Moderation Queue** where operations and pharmacists approve, flag, or hide submissions before public display.
+- Approved reviews feed directly into the $S_{\text{feedback}}$ factor of the Model v1.4 Explainable Ranking Engine.
+
+### Reasoning
+- Eliminates counterfeit and competitor review spam.
+- Maintains 100% compliance with statutory healthcare advertising restrictions.
+- Elevates consumer confidence through verified bio-equivalent peer experiences.
+
+### Alternatives Considered
+- **Unmoderated Public Reviews**: High legal and regulatory liability under pharmaceutical advertising laws.
+- **No Review Capability**: Impedes marketplace trust; patients default to expensive branded benchmarks due to unfamiliarity with generic manufacturer names.
+
+### Impact on Project
+- Introduced `ProductReview` model in `src/types.ts` and `SAMPLE_REVIEWS` seed data.
+- Built clinical review intake and display in `ProductDetailModal.tsx`.
+- Integrated Review Moderation tab in `AdminOperationsPortal.tsx` with Section 18 audit commits.
+
+---
+
+## ADR-011: Geospatial Store Allocation & Cold-Chain Telemetry Dispatch
+
+- **Date**: 2026-09-09
+- **Status**: Approved
+- **Deciders**: Last-Mile Logistics Lead, Pharmacy Operations, Technical Architect
+
+### Context / Problem
+Certain generic medicines (Insulin, Vaccines, Eye Drops) require strict cold-chain maintenance (2°C - 8°C) during last-mile delivery. Additionally, patients requiring acute symptom relief demand transparent, sub-30-minute delivery ETAs from their nearest licensed chemist hub.
+
+### Decision Taken
+Deploy an integrated **Geospatial Dynamic Dispatch & Cold-Chain Telemetry Architecture**:
+- Partner pharmacies are mapped to geographic coordinates with defined delivery service radiuses.
+- Deliveries feature real-time vector route simulation showing courier transit, speedometer, and dynamic ETA countdowns.
+- Real-time IoT temperature sensor telemetry monitor displaying live package temperature (2°C - 8°C cold-chain or 15°C - 25°C ambient) with Good Distribution Practice (GDP) compliance badges.
+- 4-digit contactless security delivery PIN required for order handover verification.
+
+### Reasoning
+- Prevents drug degradation and guarantees therapeutic potency upon patient receipt.
+- Provides acute value-seeking patients (Persona A) with verifiable delivery timeframes.
+- Prevents misdelivery or unauthorized package interception via cryptographic handover PINs.
+
+### Alternatives Considered
+- **Coarse Static Order Statuses ("In Transit")**: Fails to provide patient reassurance and lacks cold-chain auditability.
+- **Third-Party Logistics Iframe Embeds**: Lacks direct pharmaceutical telemetry sensor integration.
+
+### Impact on Project
+- Added `PharmacyGeoLocation` and `DispatchRouteEstimate` in `src/types.ts`.
+- Created `LiveRouteTrackerModal.tsx` accessible directly from `OrdersTracker.tsx`.
+- Defined partner coordinate zones in `src/data/genericMedData.ts`.
+
+---
+
+## ADR-012: Batch-Level Expiry Traceability & Pharmacovigilance Quarantine
+
+- **Date**: 2026-09-09
+- **Status**: Approved
+- **Deciders**: Chief Pharmacist, Quality Assurance Lead, Partner Operations
+
+### Context / Problem
+Under Section 65 of the Drugs and Cosmetics Act, dispensing medicines nearing expiration (<6 months) without patient consent or storing degraded inventory is a severe regulatory violation that damages pharmacy trust and patient safety.
+
+### Decision Taken
+Implement an automated **Partner Batch Expiry Radar & Quarantine System**:
+- Pharmacy store inventory tracks individual manufacturing batch numbers, QC certificate numbers, and precise expiration dates.
+- Automatic status flags: `Near Expiry (<6m)` (<180 days) and `Critical (<3m)` (<90 days).
+- One-click **Administrative Quarantine**: Partner staff can quarantine compromised or expired batches, immediately revoking sellable inventory and triggering Section 18 audit notifications.
+
+### Reasoning
+- Eliminates the risk of dispensing stale or expired medications to marketplace patients.
+- Protects pharmacy partner compliance standing during statutory health authority inspections.
+- Provides complete supply chain traceability from manufacturer batch to dispensed patient order.
+
+### Alternatives Considered
+- **Passive Expiry Filtering**: Automatically hiding items without notifying the chemist; results in physical shelf stock confusion.
+- **Aggregate SKU-Level Expiry**: Fails when a single SKU has multiple batches with disparate expiration dates.
+
+### Impact on Project
+- Added `MedicineBatchRecord` in `src/types.ts` and `SAMPLE_BATCH_RECORDS` in `src/data/genericMedData.ts`.
+- Built "Batch Expiry & Cold Chain Radar" tab in `PartnerPortal.tsx`.
+- Integrated quarantine state change commits directly to the Section 18 Audit Log.
+

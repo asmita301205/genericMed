@@ -47,6 +47,7 @@ interface CustomerMarketplaceProps {
   cart: CartItem[];
   userProfile?: UserProfile;
   activePrescriptions?: PrescriptionRecord[];
+  reviews?: ProductReview[];
   onAddToCart: (listing: ProductListing, canonicalProduct: CanonicalProduct) => void;
   onUpdateCartQty: (listingId: string, delta: number) => void;
   onRemoveFromCart: (listingId: string) => void;
@@ -61,6 +62,9 @@ interface CustomerMarketplaceProps {
   onPaymentFailure?: (errorMsg: string, session: PaymentSession) => void;
   onUploadPrescription?: (prescription: PrescriptionRecord) => void;
   onNavigateToOrders: () => void;
+  onOpenSubscriptions?: () => void;
+  onSubscribe?: (product: CanonicalProduct, listing: ProductListing, interval: SubscriptionIntervalDays) => void;
+  onSubmitReview?: (review: Omit<ProductReview, 'id' | 'date' | 'helpfulCount' | 'status'>) => void;
 }
 
 export const CustomerMarketplace: React.FC<CustomerMarketplaceProps> = ({
@@ -69,6 +73,7 @@ export const CustomerMarketplace: React.FC<CustomerMarketplaceProps> = ({
   cart,
   userProfile,
   activePrescriptions = SAMPLE_PRESCRIPTIONS,
+  reviews = [],
   onAddToCart,
   onUpdateCartQty,
   onRemoveFromCart,
@@ -77,6 +82,9 @@ export const CustomerMarketplace: React.FC<CustomerMarketplaceProps> = ({
   onPaymentFailure,
   onUploadPrescription,
   onNavigateToOrders,
+  onOpenSubscriptions,
+  onSubscribe,
+  onSubmitReview,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedDosage, setSelectedDosage] = useState<string>('all');
@@ -998,6 +1006,59 @@ export const CustomerMarketplace: React.FC<CustomerMarketplaceProps> = ({
           </div>
         </div>
       )}
+
+      {/* Phase 1 & 2 Product Detail Monograph & Reviews Modal */}
+      {selectedDetailProduct && (
+        <ProductDetailModal
+          isOpen={isProductDetailOpen}
+          onClose={() => setIsProductDetailOpen(false)}
+          product={selectedDetailProduct}
+          listings={listings}
+          reviews={reviews}
+          onAddToCart={onAddToCart}
+          onSubscribe={onSubscribe}
+          onSubmitReview={onSubmitReview}
+        />
+      )}
+
+      {/* Prescription AI OCR Scanner Modal (FR-SEARCH-05, FR-CART-02) */}
+      <PrescriptionScannerModal
+        isOpen={isPrescriptionModalOpen}
+        onClose={() => setIsPrescriptionModalOpen(false)}
+        cartItems={cart}
+        onPrescriptionVerified={(rx) => {
+          setVerifiedPrescription(rx);
+          if (onUploadPrescription) onUploadPrescription(rx);
+          setIsPrescriptionModalOpen(false);
+        }}
+      />
+
+      {/* Interactive Multi-Provider Payment Gateway Modal (FR-PAY-01 to 06) */}
+      <PaymentGatewayModal
+        isOpen={isPaymentGatewayOpen}
+        onClose={() => setIsPaymentGatewayOpen(false)}
+        amount={cartSubtotal}
+        cartItems={cart}
+        customerName={checkoutName}
+        customerEmail={checkoutEmail}
+        onPaymentSuccess={(session) => {
+          setIsPaymentGatewayOpen(false);
+          const newOrder = onPlaceOrder(
+            checkoutName,
+            checkoutEmail,
+            checkoutAddress,
+            session.method,
+            session.idempotencyKey
+          );
+          setLastPlacedOrder(newOrder);
+          setCheckoutStep('confirmed');
+        }}
+        onPaymentFailure={(errMsg, session) => {
+          if (onPaymentFailure) {
+            onPaymentFailure(errMsg, session);
+          }
+        }}
+      />
     </div>
   );
 };
