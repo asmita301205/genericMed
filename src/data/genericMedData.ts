@@ -19,7 +19,16 @@ import {
   SupportedCurrency,
   SupportedLanguage,
   CurrencyConfig,
-  DrugInteractionAlert
+  DrugInteractionAlert,
+  AbhaProfile,
+  AbdmConsentArtifact,
+  VoicePharmacistQuery,
+  DualPharmacistDispenseRecord,
+  PvPiAdverseReactionReport,
+  JanAushadhiKioskSession,
+  DrugProvenanceBlock,
+  EpidemicSurveillanceSignal,
+  BioequivalenceClinicalMetrics
 } from '../types';
 
 export const CANONICAL_PRODUCTS: CanonicalProduct[] = [
@@ -1397,5 +1406,346 @@ export const LOCALIZATION_DICTIONARY: Record<SupportedLanguage, Record<string, s
     'savings.tag': 'সাশ্রয়'
   }
 };
+
+// Phase 4: ABDM / ABHA Health Account Seed Data
+export const SAMPLE_CONSENT_ARTIFACTS: AbdmConsentArtifact[] = [
+  {
+    id: 'ABDM-CNS-8821',
+    purpose: 'Chronic Glycemic Care & Generic Medicine Refill Verification',
+    hiuName: 'Apollo Telemedicine Clinic Hub',
+    status: 'GRANTED',
+    fromDate: '2026-01-01',
+    toDate: '2026-12-31',
+    dataTypes: ['Prescription', 'DiagnosticReport', 'DischargeSummary'],
+    createdAt: '2026-01-02 09:30'
+  },
+  {
+    id: 'ABDM-CNS-9042',
+    purpose: 'Cardiovascular Risk Stratification & Lipid Panel Review',
+    hiuName: 'AIIMS New Delhi Department of Cardiology',
+    status: 'REQUESTED',
+    fromDate: '2026-09-01',
+    toDate: '2027-03-01',
+    dataTypes: ['Prescription', 'DiagnosticReport'],
+    createdAt: '2026-09-08 14:15'
+  },
+  {
+    id: 'ABDM-CNS-7611',
+    purpose: 'Emergency Room Antibiotic History Check',
+    hiuName: 'Fortis Memorial Research Institute',
+    status: 'EXPIRED',
+    fromDate: '2025-06-01',
+    toDate: '2025-06-30',
+    dataTypes: ['Prescription'],
+    createdAt: '2025-06-01 18:00'
+  }
+];
+
+export const SAMPLE_ABHA_PROFILE: AbhaProfile = {
+  abhaNumber: '14-8921-4029-1182',
+  abhaAddress: 'aarav.sharma@abdm',
+  fullName: 'Aarav Sharma',
+  gender: 'M',
+  dateOfBirth: '1984-06-15',
+  phoneLinked: '+91 98765 43210',
+  kycStatus: 'Verified',
+  kycMethod: 'Aadhaar_OTP',
+  linkedHospital: 'Apollo Health City & Jan Aushadhi Kendra #104',
+  qrCardToken: 'ABHA-QR-SHA256-88192a9fbc',
+  consentArtifacts: SAMPLE_CONSENT_ARTIFACTS,
+  linkedHealthRecordsCount: 14
+};
+
+// Phase 4: Multilingual Voice Pharmacist ("Arogya Vani") Sample Queries
+export const VOICE_PHARMACIST_SAMPLE_QUERIES: VoicePharmacistQuery[] = [
+  {
+    id: 'voice-hi-01',
+    language: 'hi',
+    spokenTranscript: 'शुगर की गोली चाहिए, सस्ती और अच्छी वाली',
+    detectedGenericSalt: 'Metformin Hydrochloride 500mg ER',
+    matchedCanonicalProductId: 'prod-metformin-500',
+    audioExplanationText: 'नमस्ते आरव जी! आपकी शुगर की दवा मेटफॉर्मिन 500 मिलीग्राम जेनेरिक में उपलब्ध है। यह ग्लाइकोमेट 500 से हूबहू समान है, पर आपको प्रति गोली 67% तक की बचत देती है। क्या मैं इसे आपके कार्ट में जोड़ दूं?',
+    savingsAnnualINR: 1680,
+    waveformFrequencies: [32, 45, 68, 92, 74, 55, 40, 80, 95, 60, 48, 30]
+  },
+  {
+    id: 'voice-en-01',
+    language: 'en',
+    spokenTranscript: 'I need Paracetamol for mild fever and body ache',
+    detectedGenericSalt: 'Paracetamol / Acetaminophen 500mg',
+    matchedCanonicalProductId: 'prod-para-500',
+    audioExplanationText: 'Hello! Paracetamol 500mg generic tablets are clinically bioequivalent to Crocin and Calpol. Sourced from WHO-GMP certified Jan Aushadhi labs at ₹0.70 per tablet, saving you 78% on branded MRP.',
+    savingsAnnualINR: 720,
+    waveformFrequencies: [25, 50, 75, 90, 60, 40, 70, 85, 55, 35, 65, 30]
+  },
+  {
+    id: 'voice-ta-01',
+    language: 'ta',
+    spokenTranscript: 'கொலஸ்ட்ரால் மாத்திரை அட்டோர்வாஸ்டேடின் வேண்டும்',
+    detectedGenericSalt: 'Atorvastatin Calcium 10mg',
+    matchedCanonicalProductId: 'prod-atorva-10',
+    audioExplanationText: 'வணக்கம்! அட்டோர்வாஸ்டாடின் 10 மிகி ஜெனரிக் மாத்திரை அட்டர்வா பிராண்டுக்கு சமமான ஆற்றல் கொண்டது. ஒரு மாத்திரைக்கு ₹4.20 மட்டுமே, 65% பணத்தை சேமிக்கலாம்.',
+    savingsAnnualINR: 2840,
+    waveformFrequencies: [40, 60, 80, 95, 85, 70, 50, 65, 80, 60, 45, 35]
+  }
+];
+
+// Phase 4: Statutory Dual-Pharmacist Dispense Signatures (Section 65 Drugs Act)
+export const SAMPLE_DUAL_DISPENSES: DualPharmacistDispenseRecord[] = [
+  {
+    id: 'DISP-SEC65-9044',
+    orderId: 'ORD-2026-9044',
+    qcPharmacist: {
+      name: 'Ramesh Krishnan, B.Pharm',
+      licenseReg: 'KA-PHARM-2016-19402',
+      council: 'Karnataka State Pharmacy Council',
+      checkedAt: '2026-09-08 10:20',
+      passedQC: true,
+      coldChainVerified: true
+    },
+    dispensePharmacist: {
+      name: 'Dr. Sunita Kulkarni, Pharm.D',
+      licenseReg: 'KA-PHARM-2012-08129',
+      council: 'Karnataka State Pharmacy Council',
+      signedAt: '2026-09-08 10:35',
+      signatureHash: 'SHA256:7f83b1657ff1fc53b92dc18148a1d65dfc2d4b1fa3d677284addd200126d9069'
+    },
+    gs1DataMatrixBarcode: '01089010830019281726090810MET2025C42177489201',
+    tamperSealNumber: 'SEAL-SEC65-8831'
+  },
+  {
+    id: 'DISP-SEC65-8821',
+    orderId: 'ORD-2026-8821',
+    qcPharmacist: {
+      name: 'Pooja Hegde, D.Pharm',
+      licenseReg: 'MH-PHARM-2019-33104',
+      council: 'Maharashtra State Pharmacy Council',
+      checkedAt: '2026-09-08 09:30',
+      passedQC: true,
+      coldChainVerified: false
+    },
+    dispensePharmacist: {
+      name: 'Vikram Joshi, M.Pharm',
+      licenseReg: 'MH-PHARM-2014-11029',
+      council: 'Maharashtra State Pharmacy Council',
+      signedAt: '2026-09-08 09:40',
+      signatureHash: 'SHA256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'
+    },
+    gs1DataMatrixBarcode: '01089010830018151726123110PAR2025A12155102938',
+    tamperSealNumber: 'SEAL-SEC65-5192'
+  }
+];
+
+// Phase 4: Pharmacovigilance Programme of India (PvPI) Adverse Drug Event Reports
+export const SAMPLE_PVPI_REPORTS: PvPiAdverseReactionReport[] = [
+  {
+    id: 'PVPI-IND-2026-0192',
+    orderId: 'ORD-2026-8794',
+    medicineName: 'Atorvastatin IP 10mg',
+    genericSalt: 'Atorvastatin Calcium',
+    batchNumber: 'BATCH-ATO-2026-B1',
+    severity: 'Mild',
+    suspectedReaction: 'Transient nocturnal leg muscle cramping after initiating statin therapy; resolved on hydration.',
+    reporterRole: 'Patient',
+    reporterName: 'Priya Sundaram',
+    ipcSubmissionStatus: 'Submitted_to_PvPI',
+    filedAt: '2026-09-08 17:30'
+  },
+  {
+    id: 'PVPI-IND-2026-0188',
+    orderId: 'ORD-2026-8821',
+    medicineName: 'Paracetamol IP 500mg',
+    genericSalt: 'Paracetamol',
+    batchNumber: 'BATCH-PAR-2025-A1',
+    severity: 'Mild',
+    suspectedReaction: 'Mild urticarial cutaneous rash on forearm 30 minutes post administration.',
+    reporterRole: 'Pharmacist',
+    reporterName: 'Vikram Joshi, M.Pharm',
+    ipcSubmissionStatus: 'Acknowledged',
+    filedAt: '2026-09-07 11:15'
+  }
+];
+
+// Phase 4: Rural Jan Aushadhi Kendra Kiosk Configuration
+export const SAMPLE_KIOSK_CONFIG: JanAushadhiKioskSession = {
+  kioskId: 'KIOSK-PMBJP-DL-104',
+  kendraCode: 'PMBJP-DEL-104',
+  operatorName: 'Sanjay Rawat, Kendra In-Charge',
+  isOffline: false,
+  pendingSyncQueue: [
+    {
+      transactionId: 'TX-OFFLINE-991',
+      medicineName: 'Paracetamol IP 500mg (10 tabs)',
+      packQty: 2,
+      amount: 11.00,
+      timestamp: 'Today at 08:45 AM'
+    },
+    {
+      transactionId: 'TX-OFFLINE-992',
+      medicineName: 'Metformin ER 500mg (20 tabs)',
+      packQty: 1,
+      amount: 14.50,
+      timestamp: 'Today at 09:10 AM'
+    }
+  ],
+  todaySubsidizedSavingsINR: 4850
+};
+
+// Phase 5: Cryptographic Blockchain Drug Provenance Ledger
+export const SAMPLE_PROVENANCE_LEDGER: DrugProvenanceBlock[] = [
+  {
+    blockIndex: 1,
+    batchNumber: 'BATCH-MET-2025-C4',
+    timestamp: '2025-11-10 08:00',
+    stage: 'API_SYNTHESIS',
+    stageTitle: 'Active Pharmaceutical Ingredient (API) Synthesis',
+    location: 'Aarti Drugs High-Purity Chemical Plant, Tarapur, MH',
+    actor: 'Lead Chemist Dr. P. K. Ghosh',
+    certificateId: 'COA-API-MET-99182',
+    blockHash: '0x8f2a11b0e928c9472e389174ad82e9124a91b8492048f982103a84b90128e491',
+    prevHash: '0x0000000000000000000000000000000000000000000000000000000000000000',
+    verificationBadge: 'Purity 99.8% Certified (USP/IP Specification)'
+  },
+  {
+    blockIndex: 2,
+    batchNumber: 'BATCH-MET-2025-C4',
+    timestamp: '2025-11-25 14:30',
+    stage: 'WHO_GMP_FORMULATION',
+    stageTitle: 'Finished Dosage Formulation & Blister Packaging',
+    location: 'Jan Aushadhi Dedicated Formulation Facility, Baddi, HP',
+    actor: 'Plant Head S. Mukherjee (WHO-GMP Certified)',
+    certificateId: 'GMP-HP-2025-8821',
+    blockHash: '0x4e9102c814b77291a082f710294b810283c90184b291048a91847c019284b812',
+    prevHash: '0x8f2a11b0e928c9472e389174ad82e9124a91b8492048f982103a84b90128e491',
+    verificationBadge: 'Dissolution Profile: 98.4% at 45 mins'
+  },
+  {
+    blockIndex: 3,
+    batchNumber: 'BATCH-MET-2025-C4',
+    timestamp: '2025-12-05 11:15',
+    stage: 'CDSCO_RELEASE',
+    stageTitle: 'Government Regulatory Batch Release & Quality Clearance',
+    location: 'Central Drugs Laboratory (CDL), Kasauli, HP',
+    actor: 'Government Analyst CDSCO Reg #CDL-774',
+    certificateId: 'CDSCO-BATCH-REL-2025-4401',
+    blockHash: '0x1a82f91048b29104a9184b7102948c019284b8127391048b291048a9184b9102',
+    prevHash: '0x4e9102c814b77291a082f710294b810283c90184b291048a91847c019284b812',
+    verificationBadge: 'Statutory Section 18 Certificate of Analysis Approved'
+  },
+  {
+    blockIndex: 4,
+    batchNumber: 'BATCH-MET-2025-C4',
+    timestamp: '2026-01-15 16:45',
+    stage: 'COLD_CHAIN_TRANSIT',
+    stageTitle: 'GDP Temperature-Controlled Central Depot Logistics',
+    location: 'National PMBI Logistics Warehouse, Bilaspur, HR',
+    actor: 'Fleet Supervisor M. Tanwar',
+    certificateId: 'GDP-TEMP-LOG-88192',
+    blockHash: '0x7b91048a9184b7102948c019284b8121a82f91048b29104a9184b91027391048',
+    prevHash: '0x1a82f91048b29104a9184b7102948c019284b8127391048b291048a9184b9102',
+    verificationBadge: 'Continuous 15°C–25°C Data-Logger Verified'
+  },
+  {
+    blockIndex: 5,
+    batchNumber: 'BATCH-MET-2025-C4',
+    timestamp: '2026-09-08 09:10',
+    stage: 'PHARMACY_RECEIPT',
+    stageTitle: 'Licensed Retail Pharmacy Store Intake & Inward Audit',
+    location: 'MedPlus Pharmacy Hub, Koramangala, Bengaluru',
+    actor: 'Supervising Pharmacist Ramesh Krishnan (Reg #19402)',
+    certificateId: 'INW-RECV-MEDPLUS-9044',
+    blockHash: '0x991048b7102948c019284b8127b91048a91841a82f91048b29104a9184b91028',
+    prevHash: '0x7b91048a9184b7102948c019284b8121a82f91048b29104a9184b91027391048',
+    verificationBadge: 'Pack Authenticity Barcode Verified (100% Match)'
+  },
+  {
+    blockIndex: 6,
+    batchNumber: 'BATCH-MET-2025-C4',
+    timestamp: '2026-09-08 10:35',
+    stage: 'PATIENT_DISPENSED',
+    stageTitle: 'Dual-Pharmacist Final Dispense & Patient Handover',
+    location: 'Customer Address, Greenfield Residences, Sector 14',
+    actor: 'Dr. Sunita Kulkarni (Reg #08129) / genericMed Dispatch',
+    certificateId: 'DISP-SEC65-9044',
+    blockHash: '0x3384b8127b91048a91841a82f91048b29104a9184b91028991048b7102948c01',
+    prevHash: '0x991048b7102948c019284b8127b91048a91841a82f91048b29104a9184b91028',
+    verificationBadge: 'Tamper-Evident Seal #8831 Intact & Handover Confirmed'
+  }
+];
+
+// Phase 5: National Epidemic Supply Chain Surveillance (IDSP Signals)
+export const SAMPLE_EPIDEMIC_SIGNALS: EpidemicSurveillanceSignal[] = [
+  {
+    id: 'EPI-2026-DENGUE-NCR',
+    diseaseName: 'Monsoon Dengue & Viral Pyrexia Surge',
+    region: 'Delhi-NCR & Western Uttar Pradesh',
+    state: 'Delhi / UP',
+    activeCaseVelocity: '+42% this week',
+    spikedSaltRequired: 'Paracetamol IP 500mg / ORS Salts',
+    recommendedBufferDays: 14,
+    alertLevel: 'EPIDEMIC_OUTBREAK',
+    actionTaken: 'Automated 14-day safety buffer dispatched to 84 partner pharmacies; Jan Aushadhi Kendras stock replenished.'
+  },
+  {
+    id: 'EPI-2026-FLU-MUMBAI',
+    diseaseName: 'Seasonal H3N2 Influenza & Upper Respiratory Infections',
+    region: 'Mumbai Metropolitan Region (MMR)',
+    state: 'Maharashtra',
+    activeCaseVelocity: '+18% this week',
+    spikedSaltRequired: 'Azithromycin 500mg / Cetirizine 10mg',
+    recommendedBufferDays: 10,
+    alertLevel: 'ELEVATED',
+    actionTaken: 'Priority cold-chain logistics allocated for pediatric and respiratory generic lines.'
+  },
+  {
+    id: 'EPI-2026-DIABETES-SOUTH',
+    diseaseName: 'Chronic Type-2 Diabetes Maintenance Cohort Monitoring',
+    region: 'Bengaluru & Chennai Urban Hubs',
+    state: 'Karnataka / Tamil Nadu',
+    activeCaseVelocity: 'Stable',
+    spikedSaltRequired: 'Metformin 500mg ER / Glimepiride 2mg',
+    recommendedBufferDays: 30,
+    alertLevel: 'NORMAL',
+    actionTaken: 'Chronic 90-day auto-refill subscriptions running at 99.1% fulfillment rate.'
+  }
+];
+
+// Phase 5: Pharmacokinetic (PK) Clinical Bioequivalence Trial Benchmarks
+export const SAMPLE_BIOEQUIVALENCE_METRICS: BioequivalenceClinicalMetrics[] = [
+  {
+    canonicalProductId: 'prod-para-500',
+    genericSalt: 'Paracetamol IP 500mg',
+    innovatorBrand: 'Crocin 500mg (GSK)',
+    aucRatioPercent: 101.4,
+    cmaxRatioPercent: 99.2,
+    tmaxDeltaHours: 0.05,
+    sampleSize: 36,
+    isBioequivalentConfirmed: true,
+    clinicalStudyId: 'BE-STUDY-CDSCO-2024-PAR500'
+  },
+  {
+    canonicalProductId: 'prod-metformin-500',
+    genericSalt: 'Metformin Hydrochloride 500mg ER',
+    innovatorBrand: 'Glucophage / Glycomet 500 SR',
+    aucRatioPercent: 98.7,
+    cmaxRatioPercent: 102.1,
+    tmaxDeltaHours: -0.10,
+    sampleSize: 42,
+    isBioequivalentConfirmed: true,
+    clinicalStudyId: 'BE-STUDY-PMBI-2025-MET500ER'
+  },
+  {
+    canonicalProductId: 'prod-atorva-10',
+    genericSalt: 'Atorvastatin Calcium 10mg',
+    innovatorBrand: 'Lipitor 10mg (Pfizer) / Atorva',
+    aucRatioPercent: 100.8,
+    cmaxRatioPercent: 97.9,
+    tmaxDeltaHours: 0.12,
+    sampleSize: 28,
+    isBioequivalentConfirmed: true,
+    clinicalStudyId: 'BE-STUDY-IPC-2024-ATO10'
+  }
+];
+
 
 

@@ -482,4 +482,139 @@ export interface DrugInteractionAlert {
   requiresPharmacistOverride: boolean;
 }
 
+// Phase 4: Ayushman Bharat Digital Mission (ABDM) & ABHA Health Locker
+export interface AbdmConsentArtifact {
+  id: string;
+  purpose: string;
+  hiuName: string;
+  status: 'GRANTED' | 'REQUESTED' | 'REVOKED' | 'EXPIRED';
+  fromDate: string;
+  toDate: string;
+  dataTypes: string[];
+  createdAt: string;
+}
+
+export interface AbhaProfile {
+  abhaNumber: string; // 14-digit format e.g. "14-8921-4029-1182"
+  abhaAddress: string; // e.g. "aarav.sharma@abdm"
+  fullName: string;
+  gender: 'M' | 'F' | 'Other';
+  dateOfBirth: string;
+  phoneLinked: string;
+  kycStatus: 'Verified' | 'Pending_KYC' | 'Unlinked';
+  kycMethod: 'Aadhaar_OTP' | 'Driving_License' | 'Biometric';
+  linkedHospital: string;
+  qrCardToken: string;
+  consentArtifacts: AbdmConsentArtifact[];
+  linkedHealthRecordsCount: number;
+}
+
+// Phase 4: Multilingual Voice Pharmacist ("Arogya Vani")
+export interface VoicePharmacistQuery {
+  id: string;
+  language: SupportedLanguage;
+  spokenTranscript: string;
+  detectedGenericSalt: string;
+  matchedCanonicalProductId: string;
+  audioExplanationText: string;
+  savingsAnnualINR: number;
+  waveformFrequencies: number[];
+}
+
+// Phase 4: Statutory Dual-Pharmacist Dispense Sign Station (Section 65 Drugs Act)
+export interface DualPharmacistDispenseRecord {
+  id: string;
+  orderId: string;
+  qcPharmacist: {
+    name: string;
+    licenseReg: string;
+    council: string;
+    checkedAt: string;
+    passedQC: boolean;
+    coldChainVerified: boolean;
+  };
+  dispensePharmacist: {
+    name: string;
+    licenseReg: string;
+    council: string;
+    signedAt: string;
+    signatureHash: string;
+  };
+  gs1DataMatrixBarcode: string;
+  tamperSealNumber: string;
+}
+
+// Phase 4: Pharmacovigilance Programme of India (PvPI) ADR Report
+export interface PvPiAdverseReactionReport {
+  id: string;
+  orderId: string;
+  medicineName: string;
+  genericSalt: string;
+  batchNumber: string;
+  severity: 'Mild' | 'Moderate' | 'Severe' | 'Life_Threatening';
+  suspectedReaction: string;
+  reporterRole: 'Patient' | 'Pharmacist' | 'Consulting_Doctor';
+  reporterName: string;
+  ipcSubmissionStatus: 'Submitted_to_PvPI' | 'Under_Review' | 'Acknowledged';
+  filedAt: string;
+}
+
+// Phase 4: Rural Jan Aushadhi Kendra Kiosk Mode (PMBJP)
+export interface JanAushadhiKioskSession {
+  kioskId: string;
+  kendraCode: string;
+  operatorName: string;
+  isOffline: boolean;
+  pendingSyncQueue: Array<{
+    transactionId: string;
+    medicineName: string;
+    packQty: number;
+    amount: number;
+    timestamp: string;
+  }>;
+  todaySubsidizedSavingsINR: number;
+}
+
+// Phase 5: Cryptographic Blockchain Drug Provenance
+export interface DrugProvenanceBlock {
+  blockIndex: number;
+  batchNumber: string;
+  timestamp: string;
+  stage: 'API_SYNTHESIS' | 'WHO_GMP_FORMULATION' | 'CDSCO_RELEASE' | 'COLD_CHAIN_TRANSIT' | 'PHARMACY_RECEIPT' | 'PATIENT_DISPENSED';
+  stageTitle: string;
+  location: string;
+  actor: string;
+  certificateId: string;
+  blockHash: string;
+  prevHash: string;
+  verificationBadge: string;
+}
+
+// Phase 5: Predictive Epidemic Supply Chain Intelligence (IDSP)
+export interface EpidemicSurveillanceSignal {
+  id: string;
+  diseaseName: string;
+  region: string;
+  state: string;
+  activeCaseVelocity: '+42% this week' | '+18% this week' | 'Stable';
+  spikedSaltRequired: string;
+  recommendedBufferDays: number;
+  alertLevel: 'NORMAL' | 'ELEVATED' | 'EPIDEMIC_OUTBREAK';
+  actionTaken: string;
+}
+
+// Phase 5: Clinical Pharmacokinetic (PK) Equivalence Metrics
+export interface BioequivalenceClinicalMetrics {
+  canonicalProductId: string;
+  genericSalt: string;
+  innovatorBrand: string;
+  aucRatioPercent: number; // 90% Confidence Interval: 80% - 125% acceptable
+  cmaxRatioPercent: number; // Peak plasma concentration ratio
+  tmaxDeltaHours: number; // Time to maximum plasma concentration delta
+  sampleSize: number;
+  isBioequivalentConfirmed: boolean;
+  clinicalStudyId: string;
+}
+
+
 

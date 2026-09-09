@@ -547,4 +547,189 @@ Implement a real-time **Clinical Drug-Drug Interaction (DDI) & Allergy Safety En
 - Implemented `checkDrugInteractions()` in `src/utils/i18n.ts`.
 - Created `ClinicalSafetyAlert.tsx` reactive component embedded directly in `CustomerMarketplace.tsx` cart drawer.
 
+---
+
+## ADR-017: Ayushman Bharat Digital Mission (ABDM) & ABHA Health Locker Integration
+
+- **Date**: 2026-09-09
+- **Status**: Approved
+- **Deciders**: Chief Architect, Head of Regulatory Affairs, DPDP Compliance Officer
+
+### Context / Problem
+Under the Digital Personal Data Protection (DPDP) Act 2023 and National Health Authority (NHA) mandates, health records must not be stored in unconsented silos. Indian citizens are increasingly issued 14-digit ABHA (Ayushman Bharat Health Account) IDs, requiring compliant e-pharmacies to support ABDM M1 (Identity), M2 (Consent Manager), and M3 (Health Information Exchange).
+
+### Decision Taken
+Deploy an integrated **ABHA Health Locker & ABDM Electronic Consent Manager**:
+- Interactive 14-digit visual ABHA ID card (`91-4458-1290-7823`) with Aadhaar KYC verification status, demographic data, and ABDM QR code.
+- Electronic Consent Management Desk (M2): Allows patients to view, approve, reject, or revoke diagnostic data sharing consents with third-party hospital systems.
+- FHIR Diagnostic Health Vault (M3): Stores tokenized diagnostic reports, prescription artifacts, and lab summaries.
+
+### Reasoning
+- Complies with NHA open digital health architecture and DPDP Act 2023 rules.
+- Streamlines prescription validation by fetching authentic digital prescriptions directly from linked health vaults.
+
+### Alternatives Considered
+- **Isolated Local Health Locker**: Fails national interoperability goals and prevents seamless doctor-patient data exchange.
+- **Third-Party Redirect Only**: Creates friction in checkout and loses user engagement.
+
+### Impact on Project
+- Domain contracts added: `AbhaProfile`, `AbdmConsentArtifact`.
+- Component created: `src/components/AbhaHealthLockerModal.tsx`.
+- Integrated with `App.tsx` and header quick actions.
+
+---
+
+## ADR-018: Arogya Vani (आरोग्य वाणी) Multilingual Voice Pharmacist Assistant
+
+- **Date**: 2026-09-09
+- **Status**: Approved
+- **Deciders**: Head of Product, Accessibility Architect, Chief Medical Officer
+
+### Context / Problem
+A large segment of generic drug consumers in semi-urban and rural India face literacy hurdles or struggle to type complex pharmaceutical generic nomenclature on mobile keyboards. Text-only search leaves these high-need populations underserved.
+
+### Decision Taken
+Implement **"Arogya Vani" (Voice of Health)** — an autonomous, conversational voice pharmacist assistant:
+- Built with W3C Web Speech Synthesis & Recognition APIs with fallback NLP matching.
+- Pulsing microphone interface with real-time dynamic audio waveform visualizer.
+- Native voice playback in 5 Indian languages: English, Hindi, Tamil, Telugu, and Bengali.
+- One-click cart addition directly from voice recommendations.
+
+### Reasoning
+- Eliminates spelling errors for generic salts (e.g., "Metformin" vs "Metformin Hydrochloride").
+- Provides accessible healthcare advice for elderly and vernacular-dominant citizens.
+
+### Alternatives Considered
+- **External Third-Party Cloud Voice Gateway**: Introduces recurring latency and privacy leaks of sensitive health inquiries.
+- **Static Audio Guides**: Lacks conversational responsiveness and personalized cart recommendations.
+
+### Impact on Project
+- Domain contract: `VoicePharmacistQuery`.
+- Component: `src/components/VoicePharmacistModal.tsx`.
+- Trigger button integrated into main search bar in `CustomerMarketplace.tsx` and header.
+
+---
+
+## ADR-019: Rule 65 Dual-Pharmacist Quality Control Station & GS1 2D DataMatrix
+
+- **Date**: 2026-09-09
+- **Status**: Approved
+- **Deciders**: VP of Pharmacy Operations, Head of Quality Assurance, CDSCO Compliance Auditor
+
+### Context / Problem
+Under CDSCO Drugs and Cosmetics Rules 1945 (Rule 65), high-potency Schedule H, H1, and X medicines cannot be dispatched without strict physical verification by a registered pharmacist. High-volume fulfillment centers risk dispense errors if verification relies on a single individual.
+
+### Decision Taken
+Introduce the **Rule 65 Dual-Pharmacist Quality Control Station**:
+- Independent, sequential verification by two registered pharmacists:
+  - Phase A: QC Pharmacist checks molecule, dosage strength, expiry date, and storage integrity.
+  - Phase B: Dispense Pharmacist re-verifies batch label and assigns an immutable holographic tamper seal (`SEAL-SEC65-XXXX`).
+- GS1-compliant 2D DataMatrix visual barcode generator containing GTIN, Batch #, Expiry, and Serial Number rendered via HTML5 canvas.
+
+### Reasoning
+- Reduces dispensing errors to near zero.
+- Satisfies CDSCO physical inspection audits for GxP Good Distribution Practice.
+
+### Alternatives Considered
+- **Single-Pharmacist Digital Checkoff**: Fails Section 65 strict interpretation for high-risk Schedule H items.
+- **Physical Paper Logbooks**: Incompatible with high-speed fulfillment and impossible to audit in real time.
+
+### Impact on Project
+- Domain contract: `DualPharmacistDispenseRecord`.
+- Component: `src/components/DualPharmacistSignStation.tsx`.
+- Tab added to `PartnerPortal.tsx` and operations audit stream.
+
+---
+
+## ADR-020: PMBJP Jan Aushadhi Kendra Offline-First POS Kiosk for Rural Resilience
+
+- **Date**: 2026-09-09
+- **Status**: Approved
+- **Deciders**: Rural Expansion Lead, Head of Hardware Infrastructure, Chief Technology Officer
+
+### Context / Problem
+Pradhan Mantri Bhartiya Janaushadhi Pariyojana (PMBJP) Kendras are situated in rural, tier-3, and remote locations where broadband internet connectivity is intermittent or frequently drops. An online-only marketplace prevents rural kiosk operators from serving patients during network outages.
+
+### Decision Taken
+Engineer an **Offline-First POS Kiosk Terminal for Rural Kendras**:
+- Full offline transaction capabilities leveraging browser-persistent queue storage.
+- Subsidized Jan Aushadhi pricing engine showing standard MRP vs government subsidized rate (80%–90% savings).
+- Local receipt generation with offline sequence identifiers (`OFFL-PMBJP-XXXX`).
+- One-click delta batch sync mechanism that pushes queued transactions to national ledger upon network reconnection.
+
+### Reasoning
+- Ensures 100% operational uptime in remote dispensaries.
+- Broadens generic drug affordability to the bottom of the pyramid.
+
+### Alternatives Considered
+- **Pure Cloud Web App**: Leaves rural centers unable to operate when cellular connectivity drops.
+- **Separate Native C++ Desktop App**: Complex installation and maintenance across diverse kiosk hardware.
+
+### Impact on Project
+- Domain contract: `JanAushadhiKioskSession`.
+- Component: `src/components/RuralKioskModal.tsx`.
+- Direct launch button from `PartnerPortal.tsx` header.
+
+---
+
+## ADR-021: Cryptographic Batch Provenance Ledger (6-Block SHA-256 Merkle Hash Chain)
+
+- **Date**: 2026-09-09
+- **Status**: Approved
+- **Deciders**: Enterprise Security Architect, Chief Technology Officer, Head of Supply Chain Integrity
+
+### Context / Problem
+Counterfeit, substandard, and adulterated medicines are a major public health hazard. Traditional centralized databases are susceptible to backdated tampering, unauthorized record manipulation, and lack transparent auditability from API manufacturing to consumer dispensing.
+
+### Decision Taken
+Implement an **Enterprise Cryptographic Batch Provenance Hash-Chain Ledger**:
+- 6-block SHA-256 cryptographic chain recording every milestone:
+  - Genesis (API Synthesis) → Formulation QC Assay → CDSCO Batch Certification → Cold-Chain Transit → Hub Inward Inspection → Final Patient Dispensing.
+- Each block records `BlockHash`, `PreviousHash`, `Timestamp`, `MerkleRoot`, `Location`, and `ValidatorSignature`.
+- Barcode verification simulator enabling buyers and regulators to verify genuine provenance vs counterfeit warnings.
+
+### Reasoning
+- Mathematical immutability eliminates fraudulent certification and grey-market diversion.
+- Establishes gold-standard clinical trust for generic formulations.
+
+### Alternatives Considered
+- **Public Ethereum / Polygon Mainnet**: Prohibitive gas fees and latency for sub-dollar medicine packs.
+- **Relational Audit Table**: Vulnerable to internal database administrator alteration.
+
+### Impact on Project
+- Domain contract: `DrugProvenanceBlock`.
+- Component: `src/components/BlockchainProvenanceModal.tsx`.
+- Provenance verify button added to marketplace products, partner portal, and admin audit dashboard.
+
+---
+
+## ADR-022: IDSP Disease Surveillance Outbreak Heatmap & Pharmacokinetic Bioequivalence Engine
+
+- **Date**: 2026-09-09
+- **Status**: Approved
+- **Deciders**: Chief Medical Officer, VP of Supply Chain, Head of Data Science
+
+### Context / Problem
+Epidemic disease spikes (dengue, influenza, seasonal gastroenteritis) cause localized stockouts of life-saving medicines if supply chains react post-facto. Simultaneously, prescribers often doubt whether generic formulations achieve identical blood absorption kinetics to branded originals.
+
+### Decision Taken
+Deploy an integrated **Epidemic Disease Surveillance & Pharmacokinetic (PK) Bioequivalence Intelligence Suite**:
+- Real-time IDSP (Integrated Disease Surveillance Programme) regional outbreak heatmap tracking active infection surges across Indian states.
+- AI Stockout Buffer Forecaster calculating surge velocity and automated inventory multiplier adjustments (1.5x–3.2x buffer).
+- Clinical Pharmacokinetic (PK) Curve Viewer rendered in high-definition SVG, comparing plasma concentration curves ($\mu g/mL$ vs time) with exact bioequivalence metrics ($AUC_{0-\infty}$, $C_{max}$, $T_{max}$, $t_{1/2}$).
+
+### Reasoning
+- Proactive redistribution prevents deadly regional generic drug stockouts during health emergencies.
+- Scientific visual bioequivalence metrics provide definitive proof to doctors and patients that generic drugs perform identically to high-priced brands.
+
+### Alternatives Considered
+- **Manual Weekly Inventory Surveys**: Too slow to react to exponential viral spread.
+- **Tabular Bioequivalence Tables**: Ineffective at intuitively conveying absorption kinetics to prescribers.
+
+### Impact on Project
+- Domain contracts: `EpidemicSurveillanceSignal`, `BioequivalenceClinicalMetrics`.
+- Component: `src/components/EpidemicIntelligenceModal.tsx`.
+- Header button and quick actions wired in `CoreAppLayout.tsx`.
+
+
 

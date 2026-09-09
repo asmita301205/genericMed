@@ -1,5 +1,17 @@
 import React, { useState } from 'react';
-import { AuditRecord, OperationalException, SupportTicket, ProductReview, NationalErpConnector } from '../types';
+import {
+  AuditRecord,
+  OperationalException,
+  SupportTicket,
+  ProductReview,
+  NationalErpConnector,
+  PvPiAdverseReactionReport
+} from '../types';
+import {
+  SAMPLE_PVPI_REPORTS,
+  SAMPLE_CONSENT_ARTIFACTS,
+  SAMPLE_PROVENANCE_LEDGER
+} from '../data/genericMedData';
 import {
   ShieldAlert,
   Sliders,
@@ -22,7 +34,9 @@ import {
   FileSpreadsheet,
   Download,
   Network,
-  Sparkles
+  Sparkles,
+  Link2,
+  Shield
 } from 'lucide-react';
 
 interface AdminOperationsPortalProps {
@@ -36,6 +50,11 @@ interface AdminOperationsPortalProps {
   onAppendAudit: (record: Omit<AuditRecord, 'id' | 'timestamp'>) => void;
   onResolveTicket?: (ticketId: string, resolutionNote: string, refundAmount?: number) => void;
   onModerateReview?: (reviewId: string, action: 'approved' | 'flagged' | 'hidden') => void;
+  // Phase 4 & Phase 5 props
+  pvpiReports?: PvPiAdverseReactionReport[];
+  onOpenBlockchainProvenance?: (batch?: string) => void;
+  onOpenAbhaLocker?: () => void;
+  onOpenEpidemicIntelligence?: () => void;
 }
 
 export const AdminOperationsPortal: React.FC<AdminOperationsPortalProps> = ({
@@ -49,8 +68,12 @@ export const AdminOperationsPortal: React.FC<AdminOperationsPortalProps> = ({
   onAppendAudit,
   onResolveTicket,
   onModerateReview,
+  pvpiReports = SAMPLE_PVPI_REPORTS,
+  onOpenBlockchainProvenance,
+  onOpenAbhaLocker,
+  onOpenEpidemicIntelligence
 }) => {
-  const [activeTab, setActiveTab] = useState<'exceptions' | 'audit' | 'ranking' | 'kpis' | 'support' | 'reviews' | 'compliance_auditor'>('exceptions');
+  const [activeTab, setActiveTab] = useState<'exceptions' | 'audit' | 'ranking' | 'kpis' | 'support' | 'reviews' | 'compliance_auditor' | 'abdm_pvpi' | 'blockchain_audit'>('exceptions');
   const [auditSearch, setAuditSearch] = useState('');
   const [isExportingCompliance, setIsExportingCompliance] = useState(false);
   const [complianceExportNotice, setComplianceExportNotice] = useState<string | null>(null);
@@ -238,6 +261,24 @@ export const AdminOperationsPortal: React.FC<AdminOperationsPortalProps> = ({
             >
               <FileCheck className="w-3 h-3 text-emerald-600" />
               Statutory AI Auditor (Sec 18)
+            </button>
+            <button
+              onClick={() => setActiveTab('abdm_pvpi')}
+              className={`px-3 py-1.5 font-semibold rounded-lg transition-colors flex items-center gap-1 ${
+                activeTab === 'abdm_pvpi' ? 'bg-white text-zinc-900 shadow-xs' : 'text-zinc-600 hover:text-zinc-900'
+              }`}
+            >
+              <ShieldCheck className="w-3 h-3 text-orange-600" />
+              ABDM & PvPI Registry
+            </button>
+            <button
+              onClick={() => setActiveTab('blockchain_audit')}
+              className={`px-3 py-1.5 font-semibold rounded-lg transition-colors flex items-center gap-1 ${
+                activeTab === 'blockchain_audit' ? 'bg-white text-zinc-900 shadow-xs' : 'text-zinc-600 hover:text-zinc-900'
+              }`}
+            >
+              <Link2 className="w-3 h-3 text-purple-600" />
+              Blockchain Audit
             </button>
           </div>
         </div>
@@ -910,6 +951,111 @@ export const AdminOperationsPortal: React.FC<AdminOperationsPortalProps> = ({
                 <span className="text-zinc-400 text-[11px]">Today at 08:30 AM</span>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Tab: ABDM Consent Registry & PvPI Pharmacovigilance */}
+      {activeTab === 'abdm_pvpi' && (
+        <div className="space-y-6">
+          <div className="bg-white border border-zinc-200 rounded-xl p-6 shadow-xs space-y-4">
+            <div className="flex items-center justify-between border-b border-zinc-100 pb-3">
+              <div className="flex items-center gap-2">
+                <ShieldCheck className="w-5 h-5 text-orange-600" />
+                <h3 className="text-base font-bold text-zinc-900">ABDM Consent Registry & National Health Stack (M2/M3)</h3>
+              </div>
+              <span className="text-xs font-mono text-zinc-400">NHA Standardized Open API</span>
+            </div>
+
+            <div className="space-y-3">
+              {SAMPLE_CONSENT_ARTIFACTS.map((c) => (
+                <div key={c.id} className="p-3.5 rounded-xl border border-zinc-200 bg-zinc-50 flex items-center justify-between text-xs">
+                  <div className="space-y-0.5">
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono font-bold text-zinc-900">{c.id}</span>
+                      <span className={`px-2 py-0.2 rounded-full text-[10px] font-bold uppercase ${
+                        c.status === 'GRANTED' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
+                      }`}>
+                        {c.status}
+                      </span>
+                    </div>
+                    <p className="font-semibold text-zinc-800">{c.hiuName} — {c.purpose}</p>
+                    <p className="text-[11px] text-zinc-500">Valid: {c.fromDate} to {c.toDate} • Types: {c.dataTypes.join(', ')}</p>
+                  </div>
+                  <span className="font-mono text-[11px] text-zinc-400">{c.createdAt}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="bg-white border border-zinc-200 rounded-xl p-6 shadow-xs space-y-4">
+            <div className="flex items-center justify-between border-b border-zinc-100 pb-3">
+              <div className="flex items-center gap-2">
+                <AlertTriangle className="w-5 h-5 text-amber-600" />
+                <h3 className="text-base font-bold text-zinc-900">PvPI Adverse Drug Reaction (ADR) Registry — IPC</h3>
+              </div>
+              <span className="text-xs font-mono text-zinc-400">Indian Pharmacopoeia Commission</span>
+            </div>
+
+            <div className="space-y-3">
+              {pvpiReports.map((r) => (
+                <div key={r.id} className="p-3.5 rounded-xl border border-zinc-200 bg-zinc-50 flex items-center justify-between text-xs">
+                  <div className="space-y-0.5">
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono font-bold text-zinc-900">{r.id}</span>
+                      <span className="px-2 py-0.2 rounded-full text-[10px] font-bold uppercase bg-amber-100 text-amber-900">
+                        {r.severity} Severity
+                      </span>
+                      <span className="text-[11px] text-emerald-700 bg-emerald-50 px-2 py-0.2 rounded border border-emerald-200">
+                        {r.ipcSubmissionStatus}
+                      </span>
+                    </div>
+                    <p className="font-semibold text-zinc-800">{r.medicineName} ({r.batchNumber})</p>
+                    <p className="text-[11px] text-zinc-600 italic">"{r.suspectedReaction}"</p>
+                    <p className="text-[10px] text-zinc-400">Reported by: {r.reporterName} ({r.reporterRole})</p>
+                  </div>
+                  <span className="font-mono text-[11px] text-zinc-400">{r.filedAt}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Tab: Blockchain Provenance Audit */}
+      {activeTab === 'blockchain_audit' && (
+        <div className="bg-white border border-zinc-200 rounded-xl p-6 shadow-xs space-y-4">
+          <div className="flex items-center justify-between border-b border-zinc-100 pb-3">
+            <div className="flex items-center gap-2">
+              <Link2 className="w-5 h-5 text-purple-600" />
+              <h3 className="text-base font-bold text-zinc-900">Cryptographic Drug Provenance Audit Trail (Anti-Counterfeit)</h3>
+            </div>
+            <span className="text-xs font-mono text-zinc-400">SHA-256 Merkle Ledger</span>
+          </div>
+
+          <div className="space-y-3">
+            {SAMPLE_PROVENANCE_LEDGER.map((b) => (
+              <div key={b.blockIndex} className="p-4 rounded-xl border border-zinc-200 bg-zinc-50 space-y-2 text-xs">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono font-bold bg-purple-100 text-purple-900 px-2 py-0.5 rounded text-[11px]">
+                      Block #{b.blockIndex}
+                    </span>
+                    <strong className="text-zinc-900">{b.stageTitle}</strong>
+                  </div>
+                  <span className="font-mono text-zinc-400 text-[11px]">{b.timestamp}</span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] text-zinc-600">
+                  <p>Location: <strong className="text-zinc-800">{b.location}</strong></p>
+                  <p>Actor: <strong className="text-zinc-800">{b.actor}</strong></p>
+                </div>
+
+                <div className="p-2 rounded bg-zinc-900 text-purple-300 font-mono text-[10px] break-all">
+                  Hash: {b.blockHash}
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       )}

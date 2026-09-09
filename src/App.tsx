@@ -21,7 +21,11 @@ import {
   SubscriptionIntervalDays,
   SupportedCurrency,
   SupportedLanguage,
-  NationalErpConnector
+  NationalErpConnector,
+  AbhaProfile,
+  AbdmConsentArtifact,
+  DualPharmacistDispenseRecord,
+  PvPiAdverseReactionReport
 } from './types';
 import { CoreAppLayout } from './components/CoreAppLayout';
 import { ArchitectureDiagram } from './components/ArchitectureDiagram';
@@ -34,6 +38,11 @@ import { LiveRouteTrackerModal } from './components/LiveRouteTrackerModal';
 import { SupportTicketModal } from './components/SupportTicketModal';
 import { TeleConsultationModal } from './components/TeleConsultationModal';
 import { NationalNetworkModal } from './components/NationalNetworkModal';
+import { AbhaHealthLockerModal } from './components/AbhaHealthLockerModal';
+import { VoicePharmacistModal } from './components/VoicePharmacistModal';
+import { RuralKioskModal } from './components/RuralKioskModal';
+import { BlockchainProvenanceModal } from './components/BlockchainProvenanceModal';
+import { EpidemicIntelligenceModal } from './components/EpidemicIntelligenceModal';
 import {
   CANONICAL_PRODUCTS,
   PRODUCT_LISTINGS,
@@ -47,7 +56,10 @@ import {
   SAMPLE_BATCH_RECORDS,
   SAMPLE_SUPPORT_TICKETS,
   PARTNER_GEOLOCATIONS,
-  NATIONAL_ERP_CONNECTORS
+  NATIONAL_ERP_CONNECTORS,
+  SAMPLE_ABHA_PROFILE,
+  SAMPLE_DUAL_DISPENSES,
+  SAMPLE_PVPI_REPORTS
 } from './data/genericMedData';
 import {
   LayoutDashboard,
@@ -200,6 +212,17 @@ export function App() {
   const [isTeleConsultationOpen, setIsTeleConsultationOpen] = useState(false);
   const [isNationalNetworkOpen, setIsNationalNetworkOpen] = useState(false);
   const [erpConnectors, setErpConnectors] = useState<NationalErpConnector[]>(NATIONAL_ERP_CONNECTORS);
+
+  // Phase 4 & Phase 5 State: ABHA, Voice AI, Dual-Pharmacist, Blockchain & Epidemic AI
+  const [abhaProfile, setAbhaProfile] = useState<AbhaProfile>(SAMPLE_ABHA_PROFILE);
+  const [dualPharmacistRecords, setDualPharmacistRecords] = useState<DualPharmacistDispenseRecord[]>(SAMPLE_DUAL_DISPENSES);
+  const [pvpiReports, setPvpiReports] = useState<PvPiAdverseReactionReport[]>(SAMPLE_PVPI_REPORTS);
+  const [isAbhaModalOpen, setIsAbhaModalOpen] = useState(false);
+  const [isVoicePharmacistOpen, setIsVoicePharmacistOpen] = useState(false);
+  const [isRuralKioskOpen, setIsRuralKioskOpen] = useState(false);
+  const [isBlockchainModalOpen, setIsBlockchainModalOpen] = useState(false);
+  const [selectedProvenanceBatch, setSelectedProvenanceBatch] = useState('BATCH-MET-2025-C4');
+  const [isEpidemicModalOpen, setIsEpidemicModalOpen] = useState(false);
 
   // Cart operations
   const handleAddToCart = (listing: ProductListing, canonicalProduct: CanonicalProduct) => {
@@ -810,7 +833,87 @@ export function App() {
       newState: 'synced',
       reason: `Automated delta catalog synchronization executed with SLA compliance.`,
       correlationId: `corr-erp-${Date.now().toString().slice(-6)}`,
-      sourceContext: 'National Pharmacy Network Gateway'
+      sourceContext: 'ERP Connector'
+    });
+  };
+
+  // Phase 4: ABDM Consent Status Update
+  const handleUpdateConsent = (consentId: string, status: AbdmConsentArtifact['status']) => {
+    setAbhaProfile(prev => ({
+      ...prev,
+      consentArtifacts: prev.consentArtifacts.map(c =>
+        c.id === consentId ? { ...c, status } : c
+      )
+    }));
+
+    handleAppendAudit({
+      actorId: userProfile.id,
+      actorRole: 'Customer',
+      actionType: 'ABDM_CONSENT_STATE_CHANGE',
+      entityType: 'AbdmConsentArtifact',
+      entityId: consentId,
+      newState: status,
+      reason: `Patient modified ABDM clinical data-sharing consent status to ${status} under DPDP rules.`,
+      correlationId: `corr-abdm-${Date.now().toString().slice(-6)}`,
+      sourceContext: 'ABHA Consent Manager'
+    });
+  };
+
+  // Phase 4: Dual-Pharmacist Dispense Authorization
+  const handleCompleteDualDispense = (record: DualPharmacistDispenseRecord) => {
+    setDualPharmacistRecords(prev => [record, ...prev]);
+
+    // Update corresponding order status
+    handleUpdateOrderStatus(record.orderId, 'Dispensed & Sealed with Quality Audit');
+
+    handleAppendAudit({
+      actorId: record.dispensePharmacist.licenseReg,
+      actorRole: 'Partner Staff',
+      actionType: 'DUAL_PHARMACIST_DISPENSE_AUTH',
+      entityType: 'DualPharmacistDispenseRecord',
+      entityId: record.id,
+      newState: 'AUTHORIZED_SEALED',
+      reason: `Section 65 two-pharmacist verification complete. QC: ${record.qcPharmacist.name}, Dispenser: ${record.dispensePharmacist.name}. Tamper Seal: ${record.tamperSealNumber}.`,
+      correlationId: `corr-sec65-${Date.now().toString().slice(-6)}`,
+      sourceContext: 'Dual Pharmacist Station'
+    });
+  };
+
+  // Phase 4: PvPI Adverse Event Report
+  const handleFilePvpiReport = (reportData: Omit<PvPiAdverseReactionReport, 'id' | 'filedAt' | 'ipcSubmissionStatus'>) => {
+    const newReport: PvPiAdverseReactionReport = {
+      ...reportData,
+      id: `PVPI-IND-${Date.now().toString().slice(-4)}`,
+      ipcSubmissionStatus: 'Submitted_to_PvPI',
+      filedAt: 'Just now'
+    };
+    setPvpiReports(prev => [newReport, ...prev]);
+
+    handleAppendAudit({
+      actorId: userProfile.id,
+      actorRole: 'Partner Staff',
+      actionType: 'PVPI_ADVERSE_EVENT_FILED',
+      entityType: 'PvPiAdverseReactionReport',
+      entityId: newReport.id,
+      newState: 'Submitted_to_PvPI',
+      reason: `Adverse drug reaction yellow form filed directly to Indian Pharmacopoeia Commission for ${reportData.medicineName}.`,
+      correlationId: `corr-pvpi-${Date.now().toString().slice(-6)}`,
+      sourceContext: 'Pharmacovigilance Reporter'
+    });
+  };
+
+  // Phase 4: Rural Kiosk Offline Queue Synchronization
+  const handleSyncOfflineQueue = (count: number) => {
+    handleAppendAudit({
+      actorId: 'kiosk-pmbjp-del-104',
+      actorRole: 'Partner Staff',
+      actionType: 'RURAL_KIOSK_OFFLINE_SYNC',
+      entityType: 'JanAushadhiKioskSession',
+      entityId: 'KIOSK-PMBJP-DL-104',
+      newState: 'SYNCHRONIZED',
+      reason: `Synchronized ${count} offline kiosk cash transactions from PMBJP Kendra into national marketplace ledger.`,
+      correlationId: `corr-kiosk-${Date.now().toString().slice(-6)}`,
+      sourceContext: 'Rural Jan Aushadhi POS'
     });
   };
 
@@ -843,7 +946,7 @@ export function App() {
                   genericMed
                 </span>
                 <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-800 border border-emerald-200">
-                  Phase 2 Active
+                  Phases 1–5 Operational
                 </span>
               </div>
               <p className="text-[11px] text-zinc-500 hidden sm:block">
@@ -973,6 +1076,19 @@ export function App() {
             onOpenTeleConsult={() => setIsTeleConsultationOpen(true)}
             onOpenNationalNetwork={() => setIsNationalNetworkOpen(true)}
             erpConnectors={erpConnectors}
+            // Phase 4 & Phase 5 props
+            onOpenAbhaLocker={() => setIsAbhaModalOpen(true)}
+            onOpenVoicePharmacist={() => setIsVoicePharmacistOpen(true)}
+            onOpenBlockchainProvenance={(batch) => {
+              if (batch) setSelectedProvenanceBatch(batch);
+              setIsBlockchainModalOpen(true);
+            }}
+            onOpenEpidemicIntelligence={() => setIsEpidemicModalOpen(true)}
+            onOpenRuralKiosk={() => setIsRuralKioskOpen(true)}
+            dualPharmacistRecords={dualPharmacistRecords}
+            onCompleteDualDispense={handleCompleteDualDispense}
+            onFilePvpiReport={handleFilePvpiReport}
+            pvpiReports={pvpiReports}
           />
         )}
 
@@ -1062,6 +1178,42 @@ export function App() {
         recentOrders={orders}
       />
 
+      {/* Phase 4: ABHA Health Locker & ABDM Consent Manager Modal */}
+      <AbhaHealthLockerModal
+        isOpen={isAbhaModalOpen}
+        onClose={() => setIsAbhaModalOpen(false)}
+        profile={abhaProfile}
+        onUpdateConsent={handleUpdateConsent}
+      />
+
+      {/* Phase 4: Arogya Vani Multilingual Voice Pharmacist Modal */}
+      <VoicePharmacistModal
+        isOpen={isVoicePharmacistOpen}
+        onClose={() => setIsVoicePharmacistOpen(false)}
+        onAddToCart={handleAddToCart}
+        language={activeLanguage}
+      />
+
+      {/* Phase 4: Rural Jan Aushadhi Kendra Offline-First POS Kiosk Modal */}
+      <RuralKioskModal
+        isOpen={isRuralKioskOpen}
+        onClose={() => setIsRuralKioskOpen(false)}
+        onSyncOfflineQueue={handleSyncOfflineQueue}
+      />
+
+      {/* Phase 5: Enterprise Blockchain Drug Provenance Ledger Modal */}
+      <BlockchainProvenanceModal
+        isOpen={isBlockchainModalOpen}
+        onClose={() => setIsBlockchainModalOpen(false)}
+        batchNumber={selectedProvenanceBatch}
+      />
+
+      {/* Phase 5: Epidemic Disease Surveillance & Pharmacokinetic Intelligence Modal */}
+      <EpidemicIntelligenceModal
+        isOpen={isEpidemicModalOpen}
+        onClose={() => setIsEpidemicModalOpen(false)}
+      />
+
       {/* Simulated Transactional Notifications Container (PRD FR-NOTIF-01) */}
       <NotificationToastContainer
         notifications={notifications}
@@ -1077,7 +1229,7 @@ export function App() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-3">
           <div className="flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-            <span className="font-medium text-zinc-700">genericMed Marketplace — Phase 3 Scale & Healthcare Ecosystem Live</span>
+            <span className="font-medium text-zinc-700">genericMed Enterprise Suite — All Phases (1 through 5) Operational</span>
             <span>•</span>
             <span className="font-mono">PRD v0.1 Specification (8 Sep 2026)</span>
           </div>

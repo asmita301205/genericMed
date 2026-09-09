@@ -6,10 +6,13 @@ import {
   MedicineBatchRecord,
   PartnerAnalyticsSummary,
   SupportedCurrency,
-  NationalErpConnector
+  NationalErpConnector,
+  DualPharmacistDispenseRecord,
+  PvPiAdverseReactionReport
 } from '../types';
 import { formatCurrency } from '../utils/i18n';
 import { NATIONAL_ERP_CONNECTORS } from '../data/genericMedData';
+import { DualPharmacistSignStation } from './DualPharmacistSignStation';
 import {
   Store,
   Package,
@@ -49,6 +52,11 @@ interface PartnerPortalProps {
   onUpdateListingPrice: (listingId: string, newPrice: number) => void;
   onUpdateOrderStatus: (orderId: string, newStatus: OrderRecord['status']) => void;
   onUpdateBatchStatus?: (batchId: string, status: MedicineBatchRecord['status']) => void;
+  // Phase 4 props
+  dualPharmacistRecords?: DualPharmacistDispenseRecord[];
+  onCompleteDualDispense?: (record: DualPharmacistDispenseRecord) => void;
+  onFilePvpiReport?: (report: any) => void;
+  onOpenRuralKiosk?: () => void;
 }
 
 export const PartnerPortal: React.FC<PartnerPortalProps> = ({
@@ -64,9 +72,13 @@ export const PartnerPortal: React.FC<PartnerPortalProps> = ({
   onUpdateListingPrice,
   onUpdateOrderStatus,
   onUpdateBatchStatus,
+  dualPharmacistRecords = [],
+  onCompleteDualDispense,
+  onFilePvpiReport,
+  onOpenRuralKiosk
 }) => {
   const [selectedPartner, setSelectedPartner] = useState<string>('partner-medplus');
-  const [activeTab, setActiveTab] = useState<'inventory' | 'fulfillment' | 'batch_radar' | 'analytics' | 'b2b_network'>('inventory');
+  const [activeTab, setActiveTab] = useState<'inventory' | 'fulfillment' | 'batch_radar' | 'analytics' | 'b2b_network' | 'dual_dispense'>('inventory');
   const [editingListingId, setEditingListingId] = useState<string | null>(null);
   const [tempPrice, setTempPrice] = useState<number>(0);
   const [tempStock, setTempStock] = useState<number>(0);
@@ -147,6 +159,18 @@ export const PartnerPortal: React.FC<PartnerPortalProps> = ({
               <option value="partner-janaushadhi">Jan Aushadhi Partner Kendra (Civil Lines)</option>
               <option value="partner-genericcare">GenericCare Express Chemist (West Center)</option>
             </select>
+
+            {onOpenRuralKiosk && (
+              <button
+                id="rural-kiosk-launcher-btn"
+                onClick={onOpenRuralKiosk}
+                className="px-3 py-2 text-xs font-bold rounded-lg border border-emerald-300 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 flex items-center gap-1.5 transition-colors shadow-2xs"
+                title="Open PMBJP Jan Aushadhi Rural Kiosk POS Terminal"
+              >
+                <Store className="w-3.5 h-3.5 text-emerald-700" />
+                <span>Rural Kendra Kiosk</span>
+              </button>
+            )}
           </div>
         </div>
 
@@ -252,7 +276,40 @@ export const PartnerPortal: React.FC<PartnerPortalProps> = ({
             Phase 3
           </span>
         </button>
+
+        <button
+          onClick={() => setActiveTab('dual_dispense')}
+          className={`px-4 py-2 font-bold rounded-lg transition-colors flex items-center gap-1.5 ${
+            activeTab === 'dual_dispense'
+              ? 'bg-zinc-900 text-white shadow-xs'
+              : 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100'
+          }`}
+        >
+          <ShieldCheck className="w-3.5 h-3.5 text-blue-500" />
+          Dual-Pharmacist Dispense (Sec. 65)
+          <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-blue-100 text-blue-900 font-bold">
+            Phase 4
+          </span>
+        </button>
       </div>
+
+      {/* Tab: Dual-Pharmacist Dispense Station (Sec. 65) */}
+      {activeTab === 'dual_dispense' && (
+        <DualPharmacistSignStation
+          orders={orders}
+          dualPharmacistRecords={dualPharmacistRecords}
+          onCompleteDispense={(rec) => {
+            onCompleteDualDispense?.(rec);
+            setAuditMessage(`Order ${rec.orderId} signed by 2 pharmacists! Tamper seal ${rec.tamperSealNumber} generated.`);
+            setTimeout(() => setAuditMessage(null), 3500);
+          }}
+          onFilePvpiReport={(rep) => {
+            onFilePvpiReport?.(rep);
+            setAuditMessage(`PvPI Yellow Form filed for ${rep.medicineName}! Logged in IPC registry.`);
+            setTimeout(() => setAuditMessage(null), 3500);
+          }}
+        />
+      )}
 
       {/* Tab: Medicine Inventory */}
       {activeTab === 'inventory' && (

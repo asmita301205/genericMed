@@ -11,7 +11,53 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [3.0.0-phase3] - 2026-09-09
+## [5.0.0-phase5] - 2026-09-09
+
+### Added
+- **Enterprise Blockchain Drug Provenance Ledger (Anti-Counterfeit)**:
+  - Added `BlockchainProvenanceModal` component rendering a 6-block cryptographic SHA-256 hash chain from API synthesis (Dr. Reddy's Lab, Hyderabad) to retail dispense.
+  - Displays Merkle root, previous block hash, validator signatures, and CDSCO Form 28 batch release certificate verification.
+  - Integrated interactive barcode scan verification simulator validating authentic medicine vs counterfeit alert.
+- **Integrated Disease Surveillance Programme (IDSP) & Epidemic Outbreak Heatmap**:
+  - Added `EpidemicIntelligenceModal` component with real-time epidemiological surge signals across Indian administrative regions (Delhi NCR, Maharashtra, Karnataka, West Bengal, Kerala).
+  - Tracks dengue, seasonal H3N2 influenza, and monsoon gastroenteritis infection velocity and affected population counts.
+- **AI Stockout Buffer & Predictive Replenishment Engine**:
+  - Predictive algorithm calculating stockout risk based on active disease surge velocity.
+  - Automated emergency inventory multiplier buffer recommendations (1.5x–3.2x normal holding) with 1-click warehouse redistribution triggers.
+- **Pharmacokinetic (PK) Curve Clinical Bioequivalence Viewer**:
+  - High-precision SVG visualization comparing plasma drug concentration curves ($\mu g/mL$ vs time) of generic bioequivalent against branded originator.
+  - Displays verified pharmacokinetic parameters: $AUC_{0-\infty}$ (within $\pm 2.8\%$), $C_{max}$ (101.4% ratio), $T_{max}$ (2.0h matching onset), and $t_{1/2}$ elimination half-life.
+- **Enterprise Lifecycle Documentation (`phases.md`)**:
+  - Authored comprehensive `phases.md` documenting architecture, technical standards, and feature traceability across all 5 project phases.
+
+### Changed
+- Promoted application state to Phase 5, connecting all Phase 1–5 modals and state management in `src/App.tsx`.
+- Updated header badge to `Phases 1–5 Operational` and persistent footer to `genericMed Enterprise Suite — All Phases (1 through 5) Operational`.
+
+---
+
+## [4.0.0-phase4] - 2026-09-09
+
+### Added
+- **Ayushman Bharat Digital Mission (ABDM) & ABHA Health Locker Integration**:
+  - Added `AbhaHealthLockerModal` component rendering 14-digit visual ABHA ID card (`91-4458-1290-7823`) with Aadhaar KYC verified badge and QR code.
+  - Integrated ABDM Electronic Consent Manager (M2) enabling users to view, approve, or revoke diagnostic clinical data sharing under DPDP Act 2023.
+  - Integrated tokenized FHIR diagnostic health record vault (M3).
+- **"Arogya Vani" (आरोग्य वाणी) Multilingual Voice Pharmacist Assistant**:
+  - Added `VoicePharmacistModal` component with Web Speech Synthesis and recognition simulation.
+  - Real-time animated audio visualizer waveform and pulsing mic.
+  - Multilingual voice advice in 5 Indian languages (English, Hindi, Tamil, Telugu, Bengali) with 1-click cart addition.
+- **Rule 65 Dual-Pharmacist Quality Control Station & GS1 2D DataMatrix**:
+  - Added `DualPharmacistSignStation` component enforcing CDSCO Drugs and Cosmetics Rule 65 two-pharmacist verification for Schedule H/X pharmaceuticals.
+  - Step 1: QC Pharmacist verification; Step 2: Dispense Pharmacist verification and tamper-evident holographic seal generation (`SEAL-SEC65-XXXX`).
+  - Dynamic canvas-rendered GS1-compliant 2D DataMatrix barcode generator embedding GTIN, batch number, expiry date, and serial number.
+- **PvPI Pharmacovigilance Yellow-Form Adverse Drug Reaction Reporter**:
+  - Direct reporting modal to the Pharmacovigilance Programme of India (Indian Pharmacopoeia Commission & CDSCO).
+  - Captures WHO-UMC causality assessments, seriousness criteria, and suspected drug interactions with Section 18 audit integration.
+- **Rural Jan Aushadhi Kendra Offline-First POS Kiosk**:
+  - Added `RuralKioskModal` component designed for low-bandwidth PMBJP Kendras.
+  - Full offline order processing with local queue storage and subsidized pricing calculation (80%–90% government subsidy).
+  - 1-click batch synchronization delta queue when network connectivity is re-established.
 
 ### Added
 - **In-App Tele-Consultation & Digital Rx Renewal Bridge (PRD Section 10 / P1)**:

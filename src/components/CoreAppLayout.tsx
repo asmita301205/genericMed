@@ -18,7 +18,9 @@ import {
   SubscriptionIntervalDays,
   SupportedCurrency,
   SupportedLanguage,
-  NationalErpConnector
+  NationalErpConnector,
+  DualPharmacistDispenseRecord,
+  PvPiAdverseReactionReport
 } from '../types';
 import { CustomerMarketplace } from './CustomerMarketplace';
 import { OrdersTracker } from './OrdersTracker';
@@ -50,7 +52,10 @@ import {
   Globe,
   Coins,
   Video,
-  Network
+  Network,
+  Mic,
+  Link2,
+  Activity
 } from 'lucide-react';
 
 interface CoreAppLayoutProps {
@@ -105,6 +110,16 @@ interface CoreAppLayoutProps {
   onOpenTeleConsult?: () => void;
   onOpenNationalNetwork?: () => void;
   erpConnectors?: NationalErpConnector[];
+  // Phase 4 & Phase 5 props
+  onOpenAbhaLocker?: () => void;
+  onOpenVoicePharmacist?: () => void;
+  onOpenBlockchainProvenance?: (batch?: string) => void;
+  onOpenEpidemicIntelligence?: () => void;
+  onOpenRuralKiosk?: () => void;
+  dualPharmacistRecords?: DualPharmacistDispenseRecord[];
+  onCompleteDualDispense?: (record: DualPharmacistDispenseRecord) => void;
+  onFilePvpiReport?: (report: any) => void;
+  pvpiReports?: PvPiAdverseReactionReport[];
 }
 
 export const CoreAppLayout: React.FC<CoreAppLayoutProps> = ({
@@ -156,7 +171,16 @@ export const CoreAppLayout: React.FC<CoreAppLayoutProps> = ({
   onLanguageChange,
   onOpenTeleConsult,
   onOpenNationalNetwork,
-  erpConnectors = []
+  erpConnectors = [],
+  onOpenAbhaLocker,
+  onOpenVoicePharmacist,
+  onOpenBlockchainProvenance,
+  onOpenEpidemicIntelligence,
+  onOpenRuralKiosk,
+  dualPharmacistRecords = [],
+  onCompleteDualDispense,
+  onFilePvpiReport,
+  pvpiReports = []
 }) => {
   const [viewportMode, setViewportMode] = useState<'desktop' | 'tablet' | 'mobile'>('desktop');
   const [roleFilter, setRoleFilter] = useState<'all' | 'customer' | 'partner' | 'admin'>('all');
@@ -330,6 +354,61 @@ export const CoreAppLayout: React.FC<CoreAppLayoutProps> = ({
             </button>
           )}
 
+          {/* Phase 4: ABHA Health Locker Quick Button */}
+          {onOpenAbhaLocker && (
+            <button
+              id="abha-header-btn"
+              onClick={onOpenAbhaLocker}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-orange-200 bg-orange-50 hover:bg-orange-100 text-xs font-bold text-orange-900 shadow-xs transition-colors cursor-pointer"
+              title="Ayushman Bharat Health Account (ABHA)"
+            >
+              <ShieldCheck className="w-3.5 h-3.5 text-orange-600" />
+              <span className="hidden sm:inline">ABHA</span>
+              <span className="text-[10px] font-mono px-1 py-0.2 rounded bg-orange-200 text-orange-800 font-bold">
+                M1-M3
+              </span>
+            </button>
+          )}
+
+          {/* Phase 4: Arogya Vani Voice AI Assistant */}
+          {onOpenVoicePharmacist && (
+            <button
+              id="voice-ai-header-btn"
+              onClick={onOpenVoicePharmacist}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-emerald-200 bg-emerald-50 hover:bg-emerald-100 text-xs font-bold text-emerald-900 shadow-xs transition-colors cursor-pointer"
+              title="Arogya Vani Multilingual Voice Pharmacist"
+            >
+              <Mic className="w-3.5 h-3.5 text-emerald-600 animate-pulse" />
+              <span className="hidden sm:inline">Voice AI</span>
+            </button>
+          )}
+
+          {/* Phase 5: Blockchain Provenance Quick Button */}
+          {onOpenBlockchainProvenance && (
+            <button
+              id="blockchain-header-btn"
+              onClick={() => onOpenBlockchainProvenance()}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-purple-200 bg-purple-50 hover:bg-purple-100 text-xs font-bold text-purple-900 shadow-xs transition-colors cursor-pointer"
+              title="Blockchain Anti-Counterfeit Provenance Ledger"
+            >
+              <Link2 className="w-3.5 h-3.5 text-purple-600" />
+              <span className="hidden sm:inline">Provenance</span>
+            </button>
+          )}
+
+          {/* Phase 5: Epidemic Surveillance & CDSS Quick Button */}
+          {onOpenEpidemicIntelligence && (
+            <button
+              id="epidemic-header-btn"
+              onClick={onOpenEpidemicIntelligence}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-red-200 bg-red-50 hover:bg-red-100 text-xs font-bold text-red-900 shadow-xs transition-colors cursor-pointer"
+              title="IDSP Epidemic Supply Chain & CDSS"
+            >
+              <Activity className="w-3.5 h-3.5 text-red-600" />
+              <span className="hidden sm:inline">Epidemic AI</span>
+            </button>
+          )}
+
           {/* User Profile / Auth Trigger */}
           <button
             id="user-profile-header-btn"
@@ -435,6 +514,10 @@ export const CoreAppLayout: React.FC<CoreAppLayoutProps> = ({
             onOpenSubscriptions={onOpenSubscriptions}
             onSubscribe={onSubscribe}
             onSubmitReview={onSubmitReview}
+            onOpenVoicePharmacist={onOpenVoicePharmacist}
+            onOpenAbhaLocker={onOpenAbhaLocker}
+            onOpenBlockchainProvenance={onOpenBlockchainProvenance}
+            onOpenEpidemicIntelligence={onOpenEpidemicIntelligence}
           />
         )}
 
@@ -464,6 +547,10 @@ export const CoreAppLayout: React.FC<CoreAppLayoutProps> = ({
             onUpdateListingPrice={onUpdateListingPrice}
             onUpdateOrderStatus={onUpdateOrderStatus}
             onUpdateBatchStatus={onUpdateBatchStatus}
+            dualPharmacistRecords={dualPharmacistRecords}
+            onCompleteDualDispense={onCompleteDualDispense}
+            onFilePvpiReport={onFilePvpiReport}
+            onOpenRuralKiosk={onOpenRuralKiosk}
           />
         )}
 
@@ -479,6 +566,10 @@ export const CoreAppLayout: React.FC<CoreAppLayoutProps> = ({
             onAppendAudit={onAppendAudit}
             onResolveTicket={onResolveTicket}
             onModerateReview={onModerateReview}
+            pvpiReports={pvpiReports}
+            onOpenBlockchainProvenance={onOpenBlockchainProvenance}
+            onOpenAbhaLocker={onOpenAbhaLocker}
+            onOpenEpidemicIntelligence={onOpenEpidemicIntelligence}
           />
         )}
       </div>

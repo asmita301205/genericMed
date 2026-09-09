@@ -44,7 +44,10 @@ import {
   FileText,
   Upload,
   Video,
-  Network
+  Network,
+  Mic,
+  Link2,
+  Activity
 } from 'lucide-react';
 
 interface CustomerMarketplaceProps {
@@ -76,6 +79,11 @@ interface CustomerMarketplaceProps {
   language?: SupportedLanguage;
   onOpenTeleConsult?: () => void;
   onOpenNationalNetwork?: () => void;
+  // Phase 4 & Phase 5 props
+  onOpenVoicePharmacist?: () => void;
+  onOpenAbhaLocker?: () => void;
+  onOpenBlockchainProvenance?: (batch?: string) => void;
+  onOpenEpidemicIntelligence?: () => void;
 }
 
 export const CustomerMarketplace: React.FC<CustomerMarketplaceProps> = ({
@@ -99,7 +107,11 @@ export const CustomerMarketplace: React.FC<CustomerMarketplaceProps> = ({
   currency = 'INR',
   language = 'en',
   onOpenTeleConsult,
-  onOpenNationalNetwork
+  onOpenNationalNetwork,
+  onOpenVoicePharmacist,
+  onOpenAbhaLocker,
+  onOpenBlockchainProvenance,
+  onOpenEpidemicIntelligence
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedDosage, setSelectedDosage] = useState<string>('all');
@@ -243,8 +255,32 @@ export const CustomerMarketplace: React.FC<CustomerMarketplaceProps> = ({
 
           {/* Cart & Rx Trigger Buttons */}
           <div className="flex items-center gap-2.5 shrink-0">
+            {onOpenAbhaLocker && (
+              <button
+                id="abha-locker-btn"
+                onClick={onOpenAbhaLocker}
+                className="inline-flex items-center gap-2 px-3 py-2.5 rounded-xl border border-orange-200 bg-orange-50/50 hover:bg-orange-100 text-orange-950 transition-colors shadow-2xs text-xs font-semibold"
+                title="Ayushman Bharat Health Account (ABHA M1/M2/M3)"
+              >
+                <ShieldCheck className="w-4 h-4 text-orange-600" />
+                <span>ABHA Card</span>
+              </button>
+            )}
+
+            {onOpenBlockchainProvenance && (
+              <button
+                id="blockchain-verify-btn"
+                onClick={() => onOpenBlockchainProvenance()}
+                className="inline-flex items-center gap-2 px-3 py-2.5 rounded-xl border border-purple-200 bg-purple-50/50 hover:bg-purple-100 text-purple-950 transition-colors shadow-2xs text-xs font-semibold"
+                title="Verify Medicine Authenticity with Blockchain SHA-256 Provenance"
+              >
+                <Link2 className="w-4 h-4 text-purple-600" />
+                <span>Verify Genuine</span>
+              </button>
+            )}
+
             <button
-              id="scan-rx-banner-btn"
+              id="upload-rx-trigger-btn"
               onClick={() => setIsPrescriptionModalOpen(true)}
               className="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl border border-zinc-200 bg-white hover:bg-zinc-50 text-zinc-800 transition-colors shadow-xs text-xs font-semibold"
             >
@@ -281,8 +317,19 @@ export const CustomerMarketplace: React.FC<CustomerMarketplaceProps> = ({
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder={t('search.placeholder', language)}
-              className="w-full pl-10 pr-4 py-2.5 text-sm rounded-lg border border-zinc-200 bg-zinc-50 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-zinc-900 text-zinc-900 placeholder:text-zinc-400 transition-all"
+              className="w-full pl-10 pr-24 py-2.5 text-sm rounded-lg border border-zinc-200 bg-zinc-50 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-zinc-900 text-zinc-900 placeholder:text-zinc-400 transition-all"
             />
+            {onOpenVoicePharmacist && (
+              <button
+                id="voice-assistant-mic-btn"
+                onClick={onOpenVoicePharmacist}
+                className="absolute right-2 top-1/2 -translate-y-1/2 px-2.5 py-1 rounded-md bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 text-xs font-semibold flex items-center gap-1.5 transition-colors shadow-2xs"
+                title="Arogya Vani Voice AI Assistant (Speak in Hindi/Tamil/English)"
+              >
+                <Mic className="w-3.5 h-3.5 text-emerald-600 animate-pulse" />
+                <span>Voice</span>
+              </button>
+            )}
           </div>
 
           <div className="md:col-span-2">
